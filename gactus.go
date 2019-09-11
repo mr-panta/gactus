@@ -1,5 +1,6 @@
 package gactus
 
+// Request [WIP]
 type Request struct {
 	Path        string
 	Method      string
@@ -7,4 +8,5 @@ type Request struct {
 	Body        []byte
 }
 
+// Response [WIP]
 type Response struct{}
