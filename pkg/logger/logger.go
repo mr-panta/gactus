@@ -1,5 +1,3 @@
-// logger is eiei
-
 package logger
 
 import (
