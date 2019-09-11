@@ -9,16 +9,16 @@ import (
 
 var g_log func(format string, args ...interface{})
 
-// ContextKey is type for context key
+// ContextKey is type for context key.
 type ContextKey string
 
-// ContextValue is type for context value
+// ContextValue is type for context value.
 type ContextValue string
 
 const logIDKey ContextKey = "log_id"
 
 // GetContextWithLogID is used to setup context
-// and set log ID into it
+// and set log ID into it.
 func GetContextWithLogID(ctx context.Context, logID string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -26,28 +26,28 @@ func GetContextWithLogID(ctx context.Context, logID string) context.Context {
 	return context.WithValue(ctx, logIDKey, ContextValue(logID))
 }
 
-// SetupLogger is used to setup logging function
+// SetupLogger is used to setup logging function.
 func SetupLogger(logFn func(format string, args ...interface{})) {
 	g_log = logFn
 }
 
-// Infof is used to log information message
+// Infof is used to log information message.
 func Infof(ctx context.Context, format string, args ...interface{}) {
 	printf(ctx, "INFO", format, args...)
 }
 
-// Warnf is used to log warning message
+// Warnf is used to log warning message.
 func Warnf(ctx context.Context, format string, args ...interface{}) {
 	printf(ctx, "WARN", format, args...)
 }
 
-// Errorf is used to log error message
+// Errorf is used to log error message.
 func Errorf(ctx context.Context, format string, args ...interface{}) {
 	printf(ctx, "ERROR", format, args...)
 }
 
 // Fatalf is used to log error message
-// then call os.Exit(1)
+// then call os.Exit(1).
 func Fatalf(ctx context.Context, format string, args ...interface{}) {
 	printf(ctx, "FATAL", format, args...)
 	os.Exit(1)

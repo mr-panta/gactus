@@ -11,13 +11,13 @@ import (
 	"github.com/mr-panta/gactus/pkg/tcp"
 )
 
-// Core contains core server config and provides methods for creating core server
+// Core contains core server config and provides methods for creating core server.
 type Core struct {
 	httpAddr string
 	tcpAddr  string
 }
 
-// NewCore is used to create NewCore
+// NewCore is used to create NewCore.
 func NewCore(httpAddr, tcpAddr string) *Core {
 	return &Core{
 		httpAddr: httpAddr,
@@ -25,7 +25,7 @@ func NewCore(httpAddr, tcpAddr string) *Core {
 	}
 }
 
-// Start is used to start core server
+// Start is used to start core server.
 func (c *Core) Start() {
 	ctx := context.Background()
 	go func() {
@@ -44,7 +44,7 @@ func (c *Core) Start() {
 	}()
 }
 
-// Wait is used to wait for interrupting signal
+// Wait is used to wait for interrupting signal.
 func (c *Core) Wait() {
 	p := make(chan os.Signal, 1)
 	signal.Notify(p, os.Interrupt, syscall.SIGTERM)
