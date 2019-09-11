@@ -15,8 +15,16 @@ type ContextKey string
 // ContextValue is type for context value
 type ContextValue string
 
-// LogIdKey is key of log id in context
-const LogIdKey ContextKey = "log_id"
+const logIDKey ContextKey = "log_id"
+
+// GetContextWithLogID is used to setup context
+// and set log ID into it
+func GetContextWithLogID(ctx context.Context, logID string) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, logIDKey, ContextValue(logID))
+}
 
 // SetupLogger is used to setup logging function
 func SetupLogger(logFn func(format string, args ...interface{})) {
@@ -58,7 +66,7 @@ func printf(ctx context.Context, mode, format string, args ...interface{}) {
 	}
 	logFormat := fmt.Sprintf("|%s|%s", mode, format)
 	if ctx != nil {
-		logId, ok := ctx.Value(LogIdKey).(ContextValue)
+		logId, ok := ctx.Value(logIDKey).(ContextValue)
 		if ok {
 			logFormat = fmt.Sprintf("|%s|log_id=%s|%s", mode, logId, format)
 		}
