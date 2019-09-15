@@ -15,6 +15,12 @@ import (
 type Core struct {
 	httpAddr string
 	tcpAddr  string
+	handler  *handler
+}
+
+type commandData struct {
+	command string
+	service string
 }
 
 // NewCore is used to create NewCore.
@@ -28,6 +34,8 @@ func NewCore(httpAddr, tcpAddr string) *Core {
 // Start is used to start core server.
 func (c *Core) Start() {
 	ctx := context.Background()
+	c.handler = newHandler()
+	// c.handler.serviceManager.routeToCommandMap["POST:/login"] = "user.login"
 	go func() {
 		logger.Infof(ctx, "start HTTP server at %s", c.httpAddr)
 		err := c.listenHTTP()
@@ -54,9 +62,9 @@ func (c *Core) Wait() {
 }
 
 func (c *Core) listenHTTP() error {
-	return http.ListenAndServe(c.httpAddr, &httpHandler{})
+	return http.ListenAndServe(c.httpAddr, c.handler)
 }
 
 func (c *Core) listenTCP() error {
-	return tcp.ListenAndServe(c.tcpAddr, &tcpHandler{})
+	return tcp.ListenAndServe(c.tcpAddr, c.handler)
 }

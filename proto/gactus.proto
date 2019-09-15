@@ -1,0 +1,23 @@
+syntax = "proto3";
+package gactus;
+
+message Constant {
+    enum ContentType {
+        CONTENT_TYPE_NULL                  = 0;
+        CONTENT_TYPE_JSON                  = 1;
+        CONTENT_TYPE_FORM_DATA             = 2;
+        CONTENT_TYPE_X_WWW_FORM_URLENCODED = 3;
+    }
+}
+
+message Request {
+    string               command      = 1;
+    string               log_id       = 2;
+    Constant.ContentType content_type = 3;
+    bytes                body         = 4;
+    bool                 is_proto     = 5;
+}
+
+message Response {
+    bytes body = 1;
+}

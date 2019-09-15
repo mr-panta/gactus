@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
-var g_log func(format string, args ...interface{})
+var gLog func(format string, args ...interface{})
 
 // ContextKey is type for context key.
 type ContextKey string
@@ -23,12 +24,24 @@ func GetContextWithLogID(ctx context.Context, logID string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	now := time.Now().Unix()
+	logID = fmt.Sprintf("%s_%d", logID, now)
 	return context.WithValue(ctx, logIDKey, ContextValue(logID))
+}
+
+// GetLogID is used to get log ID
+// from context.
+func GetLogID(ctx context.Context) string {
+	logID, ok := ctx.Value(logIDKey).(ContextValue)
+	if !ok {
+		return ""
+	}
+	return string(logID)
 }
 
 // SetupLogger is used to setup logging function.
 func SetupLogger(logFn func(format string, args ...interface{})) {
-	g_log = logFn
+	gLog = logFn
 }
 
 // Infof is used to log information message.
@@ -61,15 +74,15 @@ func getDefaultLogFn() func(format string, args ...interface{}) {
 }
 
 func printf(ctx context.Context, mode, format string, args ...interface{}) {
-	if g_log == nil {
-		g_log = getDefaultLogFn()
+	if gLog == nil {
+		gLog = getDefaultLogFn()
 	}
 	logFormat := fmt.Sprintf("|%s|%s", mode, format)
 	if ctx != nil {
-		logId, ok := ctx.Value(logIDKey).(ContextValue)
+		logID, ok := ctx.Value(logIDKey).(ContextValue)
 		if ok {
-			logFormat = fmt.Sprintf("|%s|log_id=%s|%s", mode, logId, format)
+			logFormat = fmt.Sprintf("|%s|log_id=%s|%s", mode, logID, format)
 		}
 	}
-	g_log(logFormat, args...)
+	gLog(logFormat, args...)
 }
