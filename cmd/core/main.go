@@ -3,24 +3,24 @@ package main
 import (
 	"os"
 
-	"github.com/mr-panta/gactus/pkg/core"
+	"github.com/mr-panta/gactus"
 )
 
 func main() {
 	// Get HTTP address
-	httpAddr := os.Getenv(core.HTTPAddrVar)
+	httpAddr := os.Getenv(gactus.CoreHTTPAddrVar)
 	if httpAddr == "" {
-		httpAddr = core.DefaultHTTPAddr
+		httpAddr = gactus.DefaultCoreHTTPAddr
 	}
 
 	// Get TCP address
-	tcpAddr := os.Getenv(core.TCPAddrVar)
+	tcpAddr := os.Getenv(gactus.CoreTCPAddrVar)
 	if tcpAddr == "" {
-		tcpAddr = core.DefaultTCPAddr
+		tcpAddr = gactus.DefaultCoreTCPAddr
 	}
 
 	// Setup and start core server
-	server := core.NewCore(httpAddr, tcpAddr)
-	server.Start()
-	server.Wait()
+	core := gactus.NewCore(httpAddr, tcpAddr)
+	core.Start()
+	core.Wait()
 }

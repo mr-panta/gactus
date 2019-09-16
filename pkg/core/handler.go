@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/mr-panta/gactus"
 	"github.com/mr-panta/gactus/pkg/logger"
+	gactus "github.com/mr-panta/gactus/proto"
 )
 
 const (
@@ -20,19 +20,21 @@ const (
 	contentTypeXWWWFormURLencoded = "application/x-www-form-urlencoded"
 )
 
-type handler struct {
+// Handler [TOWRITE]
+type Handler struct {
 	serviceManager *serviceManager
 }
 
-func newHandler() *handler {
-	return &handler{
+// NewHandler [TOWRITE]
+func NewHandler() *Handler {
+	return &Handler{
 		serviceManager: newServiceManager(),
 	}
 }
 
 // ServeHTTP is used to implement http.Handler,
 // get HTTP request and send back HTTP response.
-func (h *handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+func (h *Handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	ctx := context.Background()
 	ctx, logID := generateLogID(ctx, req.Method, req.URL.Path)
 	contentType, err := convertContentType(req.Header)
@@ -109,4 +111,4 @@ func convertContentType(header http.Header) (contentType gactus.Constant_Content
 
 // ServeTCP is used to implement tcp.Handler
 // and provides TCP connection.
-func (h *handler) ServeTCP(conn net.Conn) {}
+func (h *Handler) ServeTCP(conn net.Conn) {}
