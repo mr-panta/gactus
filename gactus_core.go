@@ -22,6 +22,7 @@ func newDefaultCore(httpAddr, tcpAddr string) *defaultCore {
 	return &defaultCore{
 		httpAddr: httpAddr,
 		tcpAddr:  tcpAddr,
+		handler:  core.NewHandler(),
 	}
 }
 
@@ -40,8 +41,6 @@ func (c *defaultCore) listenTCP() error {
 // Start is used to start core server.
 func (c *defaultCore) Start() {
 	ctx := context.Background()
-	c.handler = core.NewHandler()
-	// c.handler.serviceManager.routeToCommandMap["POST:/login"] = "user.login"
 	go func() {
 		err := c.listenHTTP()
 		if err != nil {

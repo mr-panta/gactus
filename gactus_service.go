@@ -23,13 +23,12 @@ type defaultService struct {
 }
 
 func newDefaultService(name, coreAddr, tcpAddr string, coreConnPoolSize int) *defaultService {
-	handler := service.NewHandler(coreAddr, coreConnPoolSize)
 	return &defaultService{
 		name:             name,
 		coreAddr:         coreAddr,
 		tcpAddr:          tcpAddr,
 		coreConnPoolSize: coreConnPoolSize,
-		handler:          handler,
+		handler:          service.NewHandler(coreAddr, coreConnPoolSize),
 	}
 }
 
