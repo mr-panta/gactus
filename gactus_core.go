@@ -25,6 +25,18 @@ func newDefaultCore(httpAddr, tcpAddr string) *defaultCore {
 	}
 }
 
+func (c *defaultCore) listenHTTP() error {
+	ctx := context.Background()
+	logger.Debugf(ctx, "start HTTP server at %s", c.httpAddr)
+	return http.ListenAndServe(c.httpAddr, c.handler)
+}
+
+func (c *defaultCore) listenTCP() error {
+	ctx := context.Background()
+	logger.Debugf(ctx, "start TCP server at %s", c.tcpAddr)
+	return tcp.ListenAndServe(c.tcpAddr, c.handler)
+}
+
 // Start is used to start core server.
 func (c *defaultCore) Start() {
 	ctx := context.Background()
@@ -51,16 +63,4 @@ func (c *defaultCore) Wait() {
 	<-p
 	logger.Warnf(context.Background(), "core server is terminated")
 	os.Exit(0)
-}
-
-func (c *defaultCore) listenHTTP() error {
-	ctx := context.Background()
-	logger.Infof(ctx, "start HTTP server at %s", c.httpAddr)
-	return http.ListenAndServe(c.httpAddr, c.handler)
-}
-
-func (c *defaultCore) listenTCP() error {
-	ctx := context.Background()
-	logger.Infof(ctx, "start TCP server at %s", c.tcpAddr)
-	return tcp.ListenAndServe(c.tcpAddr, c.handler)
 }

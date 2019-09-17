@@ -54,6 +54,11 @@ func Warnf(ctx context.Context, format string, args ...interface{}) {
 	printf(ctx, "WARN", format, args...)
 }
 
+// Debugf is used to log warning message.
+func Debugf(ctx context.Context, format string, args ...interface{}) {
+	printf(ctx, "DEBUG", format, args...)
+}
+
 // Errorf is used to log error message.
 func Errorf(ctx context.Context, format string, args ...interface{}) {
 	printf(ctx, "ERROR", format, args...)

@@ -2,6 +2,12 @@ syntax = "proto3";
 package gactus;
 
 message Constant {
+    enum ResponseCode {
+        RESPONSE_OK                  = 0;
+        RESPONSE_PROCESS_NOT_FOUND   = 1;
+        RESPONSE_ERROR_SETUP_REQUEST = 2;
+    }
+
     enum ContentType {
         CONTENT_TYPE_NULL                  = 0;
         CONTENT_TYPE_JSON                  = 1;
@@ -17,14 +23,33 @@ message Constant {
 }
 
 message Request {
-    string               command      = 1;
-    string               log_id       = 2;
-    Constant.ContentType content_type = 3;
+    string               log_id       = 1;
+    string               command      = 2;
+    bool                 is_proto     = 3;
     bytes                body         = 4;
-    bool                 is_proto     = 5;
+    Constant.ContentType content_type = 5;
+}
+
+message Response {
+    uint32 code = 1;
+    bytes  body = 2;
 }
 
 message HttpConfig {
     Constant.HttpMethod method = 1;
     string              path   = 2;
+}
+
+message ProcessorRegistry {
+    string     command     = 1;
+    HttpConfig http_config = 2;
+}
+
+message RegisterProcessorsRequest {
+    string   addr                                   = 1;
+    repeated ProcessorRegistry processor_registries = 2;
+}
+
+message RegisterProcessorsResponse {
+    string debug_message = 1;
 }

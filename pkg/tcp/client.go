@@ -10,6 +10,7 @@ import (
 type Client struct {
 	addr     string
 	connPool chan net.Conn
+	// TODO: flexible connection pool
 }
 
 // NewClient is used to create Client

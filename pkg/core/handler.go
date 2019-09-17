@@ -111,4 +111,7 @@ func convertContentType(header http.Header) (contentType gactus.Constant_Content
 
 // ServeTCP is used to implement tcp.Handler
 // and provides TCP connection.
-func (h *Handler) ServeTCP(conn net.Conn) {}
+func (h *Handler) ServeTCP(conn net.Conn) {
+	// TODO: handle register data from service
+	// TODO: handle request from service
+}
