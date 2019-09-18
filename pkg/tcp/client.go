@@ -57,6 +57,8 @@ func (c *defaultClient) poolManager() {
 		conn := <-c.connPool
 		if time.Since(conn.lastActive) > c.idleConnTimeout {
 			_, _ = c.drainConnPool(conn, false)
+		} else {
+			c.connPool <- conn
 		}
 		time.Sleep(c.clearPeriod)
 	}
@@ -125,6 +127,7 @@ func (c *defaultClient) drainConnPool(conn *connection, forceMode bool) (empty b
 		err = errors.New("pool size cannot be lower than minimum number of connections")
 		return false, err
 	}
+	c.poolSize--
 	err = conn.tcpConn.Close()
 	if err != nil {
 		return false, err
