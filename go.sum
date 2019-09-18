@@ -10,3 +10,5 @@ github.com/mr-panta/go-tcpclient v0.1.2 h1:sLRcWrpKvimE5vMoXiZpJ2eA6BBeCB/7XC9kC
 github.com/mr-panta/go-tcpclient v0.1.2/go.mod h1:GKizi5C3qW+t0c9MHVX9VCbWIgGNW+qWrmPTsbTUsSE=
 github.com/mr-panta/go-tcpclient v0.2.0 h1:isWIMVvhKj33gA1TfKNYVpzOeibaM0oh0bWUMIdZLt4=
 github.com/mr-panta/go-tcpclient v0.2.0/go.mod h1:GKizi5C3qW+t0c9MHVX9VCbWIgGNW+qWrmPTsbTUsSE=
+github.com/mr-panta/go-tcpclient v0.3.0 h1:x6HyBYDxok/1qs5eAxzo6mHJWTjrogS3LGJLXhEvolI=
+github.com/mr-panta/go-tcpclient v0.3.0/go.mod h1:OZeSqYcejEel3Pg+FHOvJjRRFm6Qn+wN4dElsLjF9/A=

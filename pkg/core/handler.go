@@ -2,10 +2,8 @@ package core
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -15,6 +13,7 @@ import (
 	gactus "github.com/mr-panta/gactus/proto"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
+	"github.com/mr-panta/go-tcpclient"
 )
 
 const (
@@ -118,35 +117,22 @@ func (h *Handler) ServeTCP(conn net.Conn) {
 	ctx := context.Background()
 	logger.Debugf(ctx, "new TCP connection is created")
 	for {
-		// receive data length
-		dataSize := make([]byte, 4)
-		_, err := conn.Read(dataSize)
-		if err == io.EOF {
-			logger.Debugf(ctx, "TCP connection is closed")
-			return
-		}
-		if err != nil {
-			logger.Errorf(ctx, err.Error())
-			return
-		}
-		// receive data
-		data := make([]byte, binary.LittleEndian.Uint32(dataSize))
-		_, err = conn.Read(data)
-		if err != nil {
-			logger.Errorf(ctx, err.Error())
-			return
-		}
-		wrappedReq := &pb.Request{}
-		err = proto.Unmarshal(data, wrappedReq)
+		err := tcpclient.Reader(conn, func(input []byte) ([]byte, error) {
+			wrappedReq := &pb.Request{}
+			err := proto.Unmarshal(input, wrappedReq)
+			if err != nil {
+				return nil, err
+			}
+			reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
+			// TODO: handle register data from service
+			// TODO: handle request from service
+			req := &pb.RegisterProcessorsRequest{}
+			_ = proto.Unmarshal(wrappedReq.Body, req)
+			logger.Infof(reqCtx, "%v", req)
+			return nil, nil
+		})
 		if err != nil {
 			logger.Errorf(ctx, err.Error())
 		}
-		reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
-		// TODO: handle register data from service
-		// TODO: handle request from service
-		req := &pb.RegisterProcessorsRequest{}
-		_ = proto.Unmarshal(wrappedReq.Body, req)
-		logger.Infof(reqCtx, "%v", req)
-
 	}
 }
