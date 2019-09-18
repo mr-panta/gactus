@@ -79,7 +79,7 @@ func (h *Handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	// Send response back
 	res.Header().Set("Content-Type", contentTypeJSON)
-	res.Write(jsonResponse)
+	_, _ = res.Write(jsonResponse)
 }
 
 func generateLogID(ctx context.Context, method, path string) (coveredCTX context.Context, logID string) {
