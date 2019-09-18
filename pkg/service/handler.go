@@ -2,25 +2,36 @@ package service
 
 import (
 	"net"
+	"time"
 
 	"github.com/golang/protobuf/proto"
-
 	"github.com/mr-panta/gactus/pkg/tcp"
 	pb "github.com/mr-panta/gactus/proto"
 )
 
 // Handler [TOWRITE]
 type defaultHandler struct {
-	coreClient        *tcp.Client
+	coreClient        tcp.Client
 	commandProcessMap map[string]func(req, res proto.Message) (code uint32)
 }
 
 // NewHandler [TOWRITE]
-func NewHandler(coreAddr string, coreConnPoolSize int) Handler {
-	return &defaultHandler{
-		coreClient:        tcp.NewClient(coreAddr, coreConnPoolSize), // TODO: pool size
-		commandProcessMap: make(map[string]func(req, res proto.Message) (code uint32)),
+func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod int) (hanlder Handler, err error) {
+	coreClient, err := tcp.NewClient(
+		coreAddr,
+		minConns,
+		maxConns,
+		time.Duration(idleConnTimeout)*time.Millisecond,
+		time.Duration(waitConnTimeout)*time.Millisecond,
+		time.Duration(clearPeriod)*time.Millisecond,
+	)
+	if err != nil {
+		return nil, err
 	}
+	return &defaultHandler{
+		coreClient:        coreClient,
+		commandProcessMap: make(map[string]func(req, res proto.Message) (code uint32)),
+	}, nil
 }
 
 // SetProcess [TOWRITE]

@@ -25,8 +25,11 @@ func main() {
 	}
 
 	// Setup and start service server
-	service := gactus.NewService("example", coreAddr, tcpAddr, 100)
-	err := service.RegisterProcessors(getProcessorList())
+	service, err := gactus.NewService("example", coreAddr, tcpAddr, 1, 10, 100, 100, 1000)
+	if err != nil {
+		logger.Fatalf(ctx, err.Error())
+	}
+	err = service.RegisterProcessors(getProcessorList())
 	if err != nil {
 		logger.Fatalf(ctx, err.Error())
 	}

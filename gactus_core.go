@@ -18,7 +18,7 @@ type defaultCore struct {
 	handler  *core.Handler
 }
 
-func newDefaultCore(httpAddr, tcpAddr string) *defaultCore {
+func NewCore(httpAddr, tcpAddr string) Core {
 	return &defaultCore{
 		httpAddr: httpAddr,
 		tcpAddr:  tcpAddr,

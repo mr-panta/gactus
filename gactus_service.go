@@ -15,21 +15,23 @@ import (
 )
 
 type defaultService struct {
-	name             string
-	coreAddr         string
-	tcpAddr          string
-	coreConnPoolSize int
-	handler          service.Handler
+	name     string
+	coreAddr string
+	tcpAddr  string
+	handler  service.Handler
 }
 
-func newDefaultService(name, coreAddr, tcpAddr string, coreConnPoolSize int) *defaultService {
-	return &defaultService{
-		name:             name,
-		coreAddr:         coreAddr,
-		tcpAddr:          tcpAddr,
-		coreConnPoolSize: coreConnPoolSize,
-		handler:          service.NewHandler(coreAddr, coreConnPoolSize),
+func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod int) (Service, error) {
+	handler, err := service.NewHandler(coreAddr, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod)
+	if err != nil {
+		return nil, err
 	}
+	return &defaultService{
+		name:     name,
+		coreAddr: coreAddr,
+		tcpAddr:  tcpAddr,
+		handler:  handler,
+	}, nil
 }
 
 func (c *defaultService) listenTCP() error {

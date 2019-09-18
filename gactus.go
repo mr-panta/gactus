@@ -13,22 +13,12 @@ type Core interface {
 	Wait()
 }
 
-// NewCore [TOWRITE]
-func NewCore(httpAddr, tcpAddr string) Core {
-	return newDefaultCore(httpAddr, tcpAddr)
-}
-
 // Service [TOWRITE]
 type Service interface {
 	Start()
 	Wait()
 	RegisterProcessors(processors []Processor) (err error)
 	SendRequest(ctx context.Context, command string, req, res proto.Message) (code uint32)
-}
-
-// NewService [TOWRITE]
-func NewService(serviceName, coreAddr, tcpAddr string, coreConnPoolSize int) Service {
-	return newDefaultService(serviceName, coreAddr, tcpAddr, coreConnPoolSize)
 }
 
 // Processor [TOWRITE]

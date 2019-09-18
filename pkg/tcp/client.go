@@ -10,7 +10,7 @@ import (
 
 // Client contains TCP connection pool and provide
 // APIs for communicating via the connections
-type Client struct {
+type defaultClient struct {
 	addr            string
 	minConns        int
 	maxConns        int
@@ -27,25 +27,29 @@ type connection struct {
 	lastActive time.Time
 }
 
-func (c *Client) fillConnPool() (err error) {
+func (c *defaultClient) fillConnPool(getConn bool) (conn *connection, err error) {
 	c.poolLock.Lock()
 	defer c.poolLock.Unlock()
 	if c.poolSize == c.maxConns {
-		return errors.New("connection pool is full")
+		return nil, errors.New("connection pool is full")
 	}
 	c.poolSize++
 	tcpConn, err := net.Dial("tcp", c.addr)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	c.connPool <- &connection{
+	conn = &connection{
 		tcpConn:    tcpConn,
 		lastActive: time.Now(),
 	}
-	return nil
+	if getConn {
+		return conn, nil
+	}
+	c.connPool <- conn
+	return nil, nil
 }
 
-func (c *Client) poolManager() {
+func (c *defaultClient) poolManager() {
 	for {
 		if c.poolSize == 0 {
 			return
@@ -59,8 +63,8 @@ func (c *Client) poolManager() {
 }
 
 // NewClient is used to create Client
-func NewClient(addr string, minConns, maxConns int, idleConnTimeout, waitConnTimeout, clearPeriod time.Duration) (client *Client, err error) {
-	client = &Client{
+func NewClient(addr string, minConns, maxConns int, idleConnTimeout, waitConnTimeout, clearPeriod time.Duration) (client Client, err error) {
+	c := &defaultClient{
 		addr:            addr,
 		minConns:        minConns,
 		maxConns:        maxConns,
@@ -71,19 +75,27 @@ func NewClient(addr string, minConns, maxConns int, idleConnTimeout, waitConnTim
 		poolLock:        sync.Mutex{},
 		connPool:        make(chan *connection, maxConns),
 	}
-	for i := 0; i < client.minConns; i++ {
-		if err = client.fillConnPool(); err != nil {
-			client.Close()
+	for i := 0; i < c.minConns; i++ {
+		if _, err = c.fillConnPool(false); err != nil {
+			c.Close()
 			return client, err
 		}
 	}
-	go client.poolManager()
-	return client, nil
+	go c.poolManager()
+	return c, nil
 }
 
 // Send is used to send and get TCP data via TCP connection
-func (c *Client) Send(input []byte) (output []byte, err error) {
-	conn := <-c.connPool
+func (c *defaultClient) Send(input []byte) (output []byte, err error) {
+	conn := &connection{}
+	select {
+	case conn = <-c.connPool:
+	case <-time.After(c.waitConnTimeout):
+		conn, err = c.fillConnPool(true)
+		if err != nil {
+			return nil, err
+		}
+	}
 	conn.lastActive = time.Now()
 	defer func() {
 		c.connPool <- conn
@@ -95,7 +107,7 @@ func (c *Client) Send(input []byte) (output []byte, err error) {
 	return ioutil.ReadAll(conn.tcpConn)
 }
 
-func (c *Client) drainConnPool(conn *connection, forceMode bool) (empty bool, err error) {
+func (c *defaultClient) drainConnPool(conn *connection, forceMode bool) (empty bool, err error) {
 	c.poolLock.Lock()
 	defer c.poolLock.Unlock()
 	if c.poolSize == 0 {
@@ -122,7 +134,7 @@ func (c *Client) drainConnPool(conn *connection, forceMode bool) (empty bool, er
 }
 
 // Close is use to close all connections in pool
-func (c *Client) Close() (err error) {
+func (c *defaultClient) Close() (err error) {
 	for empty := false; !empty; {
 		empty, err = c.drainConnPool(nil, true)
 		if err != nil {
