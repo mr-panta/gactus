@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	pb "github.com/mr-panta/gactus/proto"
-	"github.com/mr-panta/tcpclient"
+	"github.com/mr-panta/go-tcpclient"
 )
 
 // Handler [TOWRITE]

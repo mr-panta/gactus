@@ -8,10 +8,10 @@ import (
 	"syscall"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/mr-panta/gactus/pkg/logger"
 	"github.com/mr-panta/gactus/pkg/service"
 	"github.com/mr-panta/gactus/pkg/tcp"
 	pb "github.com/mr-panta/gactus/proto"
+	"github.com/mr-panta/go-logger"
 )
 
 type defaultService struct {
@@ -21,8 +21,18 @@ type defaultService struct {
 	handler  service.Handler
 }
 
-func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod int) (Service, error) {
-	handler, err := service.NewHandler(coreAddr, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod)
+// NewService [TOWRITE]
+func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTimeout,
+	waitConnTimeout, clearPeriod int) (Service, error) {
+
+	handler, err := service.NewHandler(
+		coreAddr,
+		minConns,
+		maxConns,
+		idleConnTimeout,
+		waitConnTimeout,
+		clearPeriod,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -62,6 +72,8 @@ func (c *defaultService) Wait() {
 
 // RegisterProcessors [TOWRITE]
 func (c *defaultService) RegisterProcessors(processors []Processor) error {
+	ctx := logger.GetContextWithLogID(context.Background(), c.name)
+	logger.Debugf(ctx, "start registering processors")
 	req := &pb.RegisterProcessorsRequest{
 		Addr:                c.tcpAddr,
 		ProcessorRegistries: make([]*pb.ProcessorRegistry, len(processors)),
@@ -73,8 +85,6 @@ func (c *defaultService) RegisterProcessors(processors []Processor) error {
 		}
 		c.handler.SetProcess(processor.GetCommand(), processor.Process)
 	}
-	ctx := logger.GetContextWithLogID(context.Background(), c.name)
-	logger.Debugf(ctx, "start registering processors")
 	res := &pb.RegisterProcessorsResponse{}
 	code := c.SendRequest(ctx, CMDRegisterProcessors, req, res)
 	if code != uint32(pb.Constant_RESPONSE_OK) {

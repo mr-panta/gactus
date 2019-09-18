@@ -8,8 +8,8 @@ import (
 	"syscall"
 
 	"github.com/mr-panta/gactus/pkg/core"
-	"github.com/mr-panta/gactus/pkg/logger"
 	"github.com/mr-panta/gactus/pkg/tcp"
+	"github.com/mr-panta/go-logger"
 )
 
 type defaultCore struct {
@@ -18,6 +18,7 @@ type defaultCore struct {
 	handler  *core.Handler
 }
 
+// NewCore [TOWRITE]
 func NewCore(httpAddr, tcpAddr string) Core {
 	return &defaultCore{
 		httpAddr: httpAddr,

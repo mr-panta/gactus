@@ -1,10 +1,7 @@
 package tcp
 
 import (
-	"context"
 	"net"
-
-	"github.com/mr-panta/gactus/pkg/logger"
 )
 
 // Handler is used to handle TCP connection.
@@ -20,7 +17,6 @@ func ListenAndServe(addr string, handler Handler) error {
 	}
 	for {
 		conn, err := listener.Accept()
-		logger.Debugf(context.Background(), "new TCP connection is created")
 		if err != nil {
 			return err
 		}

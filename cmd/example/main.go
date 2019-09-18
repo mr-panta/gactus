@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/mr-panta/gactus/pkg/logger"
+	"github.com/mr-panta/go-logger"
 
 	"github.com/mr-panta/gactus"
 )

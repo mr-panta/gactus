@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/mr-panta/tcpclient"
+	"github.com/mr-panta/go-tcpclient"
 )
 
 type serviceManager struct {

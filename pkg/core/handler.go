@@ -2,16 +2,19 @@ package core
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/mr-panta/gactus/pkg/logger"
 	gactus "github.com/mr-panta/gactus/proto"
+	pb "github.com/mr-panta/gactus/proto"
+	"github.com/mr-panta/go-logger"
 )
 
 const (
@@ -112,6 +115,38 @@ func convertContentType(header http.Header) (contentType gactus.Constant_Content
 // ServeTCP is used to implement tcp.Handler
 // and provides TCP connection.
 func (h *Handler) ServeTCP(conn net.Conn) {
-	// TODO: handle register data from service
-	// TODO: handle request from service
+	ctx := context.Background()
+	logger.Debugf(ctx, "new TCP connection is created")
+	for {
+		// receive data length
+		dataSize := make([]byte, 4)
+		_, err := conn.Read(dataSize)
+		if err == io.EOF {
+			logger.Debugf(ctx, "TCP connection is closed")
+			return
+		}
+		if err != nil {
+			logger.Errorf(ctx, err.Error())
+			return
+		}
+		// receive data
+		data := make([]byte, binary.LittleEndian.Uint32(dataSize))
+		_, err = conn.Read(data)
+		if err != nil {
+			logger.Errorf(ctx, err.Error())
+			return
+		}
+		wrappedReq := &pb.Request{}
+		err = proto.Unmarshal(data, wrappedReq)
+		if err != nil {
+			logger.Errorf(ctx, err.Error())
+		}
+		reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
+		// TODO: handle register data from service
+		// TODO: handle request from service
+		req := &pb.RegisterProcessorsRequest{}
+		_ = proto.Unmarshal(wrappedReq.Body, req)
+		logger.Infof(reqCtx, "%v", req)
+
+	}
 }
