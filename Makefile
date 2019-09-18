@@ -1,3 +1,7 @@
+# setup
+setup:
+	GO111MODULE=on go mod vendor
+
 # gen
 gen:
 	make gen/proto
