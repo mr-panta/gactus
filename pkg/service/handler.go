@@ -5,19 +5,19 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/mr-panta/gactus/pkg/tcp"
 	pb "github.com/mr-panta/gactus/proto"
+	"github.com/mr-panta/tcpclient"
 )
 
 // Handler [TOWRITE]
 type defaultHandler struct {
-	coreClient        tcp.Client
+	coreClient        tcpclient.Client
 	commandProcessMap map[string]func(req, res proto.Message) (code uint32)
 }
 
 // NewHandler [TOWRITE]
 func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod int) (hanlder Handler, err error) {
-	coreClient, err := tcp.NewClient(
+	coreClient, err := tcpclient.NewClient(
 		coreAddr,
 		minConns,
 		maxConns,

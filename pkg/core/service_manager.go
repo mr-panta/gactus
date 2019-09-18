@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/mr-panta/gactus/pkg/tcp"
+	"github.com/mr-panta/tcpclient"
 )
 
 type serviceManager struct {
 	routeToCommandMap map[string]string // key format = `method:path`
 	commandToAddrsMap map[string][]string
-	addrToConnMap     map[string]tcp.Client
+	addrToConnMap     map[string]tcpclient.Client
 }
 
 func newServiceManager() *serviceManager {
@@ -26,7 +26,7 @@ func (m *serviceManager) getCommand(method, path string) (command string, exists
 	return
 }
 
-func (m *serviceManager) getServiceConn(command string) (service tcp.Client, exists bool) {
+func (m *serviceManager) getServiceConn(command string) (service tcpclient.Client, exists bool) {
 	addrs := m.commandToAddrsMap[command]
 	addrsLength := len(addrs)
 	if addrsLength == 0 {

@@ -1,2 +1,4 @@
 github.com/golang/protobuf v1.3.2 h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs=
 github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
+github.com/mr-panta/tcpclient v0.1.0 h1:w+m4eG1UjP5tWovWPuU3440VwEVzGWOAR4Ryj5zIrqg=
+github.com/mr-panta/tcpclient v0.1.0/go.mod h1:WhuYKChFz5qOXRaCuXNAEjJsVjNHnloeEj+GRkJ58fA=
