@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/mr-panta/go-logger"
@@ -14,16 +15,18 @@ import (
 )
 
 type serviceManager struct {
-	routeToCommandMap map[string]string // key format = `method:path`
-	commandToAddrsMap map[string][]string
-	addrToConnMap     map[string]tcpclient.Client
+	routeToCommandMap   map[string]string // key format = `method:path`
+	commandToAddrsMap   map[string][]string
+	addrToClientMap     map[string]tcpclient.Client
+	addrToActiveTimeMap map[string]time.Time
 }
 
 func newServiceManager() *serviceManager {
 	return &serviceManager{
-		routeToCommandMap: make(map[string]string),
-		commandToAddrsMap: make(map[string][]string),
-		addrToConnMap:     make(map[string]tcpclient.Client),
+		routeToCommandMap:   make(map[string]string),
+		commandToAddrsMap:   make(map[string][]string),
+		addrToClientMap:     make(map[string]tcpclient.Client),
+		addrToActiveTimeMap: make(map[string]time.Time),
 	}
 }
 
@@ -40,7 +43,7 @@ func (m *serviceManager) getServiceConn(command string) (service tcpclient.Clien
 		return nil, false
 	}
 	addr := addrs[rand.Intn(addrsLength)]
-	service, exists = m.addrToConnMap[addr]
+	service, exists = m.addrToClientMap[addr]
 	return
 }
 
@@ -69,6 +72,7 @@ func (m *serviceManager) registerProcessors(ctx context.Context, wrappedReq *pb.
 		if isNewAddr {
 			m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], req.Addr)
 		}
+		m.addrToActiveTimeMap[req.Addr] = time.Now()
 	}
 	wrappedRes = &pb.Response{}
 	wrappedRes.Body, err = proto.Marshal(res)
@@ -91,4 +95,37 @@ func getMethodString(method pb.Constant_HttpMethod) string {
 		return "POST"
 	}
 	return "UNKNOWN"
+}
+
+func (m *serviceManager) abandonService(addr string) {
+	for command, addrs := range m.commandToAddrsMap {
+		exists := false
+		idx := 0
+		a := ""
+		for idx, a = range addrs {
+			exists = exists || (addr == a)
+			if exists {
+				break
+			}
+		}
+		if exists {
+			if len(m.commandToAddrsMap[command]) > 1 {
+				m.commandToAddrsMap[command] = append(m.commandToAddrsMap[command][:idx], m.commandToAddrsMap[command][idx+1:]...)
+			} else {
+				delete(m.commandToAddrsMap, command)
+				for route, cmd := range m.routeToCommandMap {
+					if cmd == command {
+						delete(m.routeToCommandMap, route)
+					}
+				}
+			}
+		}
+	}
+	if client, exists := m.addrToClientMap[addr]; exists {
+		client.Close()
+		delete(m.addrToClientMap, addr)
+	}
+	if _, exists := m.addrToActiveTimeMap[addr]; exists {
+		delete(m.addrToActiveTimeMap, addr)
+	}
 }

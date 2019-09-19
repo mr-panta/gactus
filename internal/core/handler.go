@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/mr-panta/gactus/internal/config"
@@ -62,14 +63,18 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	data, _ := proto.Marshal(gactusReq)
 
 	// Send data to TCP
-	service, exists := h.serviceManager.getServiceConn(command)
+	serviceClient, exists := h.serviceManager.getServiceConn(command)
 	if !exists {
 		logger.Errorf(ctx, "%s command not found", command)
 		return
 	}
-	jsonResponse, err := service.Send(data)
+	jsonResponse, err := serviceClient.Send(data)
 	if err != nil {
 		logger.Errorf(ctx, "cannot send data to service, err=%v", err)
+		h.serviceManager.abandonService(serviceClient.GetHostAddr())
+		jsonResponse = []byte(config.ErrorServiceNotAvailable)
+	} else {
+		h.serviceManager.addrToActiveTimeMap[serviceClient.GetHostAddr()] = time.Now()
 	}
 
 	// Send response back
