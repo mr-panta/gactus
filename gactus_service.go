@@ -8,14 +8,13 @@ import (
 	"syscall"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/mr-panta/gactus/internal/core"
+	"github.com/mr-panta/gactus/internal/config"
 	"github.com/mr-panta/gactus/internal/service"
-	"github.com/mr-panta/gactus/internal/tcp"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
 )
 
-type defaultService struct {
+type gactusService struct {
 	name            string
 	coreAddr        string
 	tcpAddr         string
@@ -28,14 +27,14 @@ type defaultService struct {
 }
 
 // NewService [TOWRITE]
-func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTimeout,
-	waitConnTimeout, clearPeriod int) (Service, error) {
+func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout,
+	clearPeriod int) (Service, error) {
 
 	handler, err := service.NewHandler(coreAddr, 0, 1, idleConnTimeout, waitConnTimeout, clearPeriod)
 	if err != nil {
 		return nil, err
 	}
-	return &defaultService{
+	return &gactusService{
 		name:            name,
 		coreAddr:        coreAddr,
 		tcpAddr:         tcpAddr,
@@ -48,14 +47,14 @@ func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTime
 	}, nil
 }
 
-func (c *defaultService) listenTCP() error {
+func (c *gactusService) listenTCP() error {
 	ctx := context.Background()
 	logger.Debugf(ctx, "start tcp server on %s", c.tcpAddr)
-	return tcp.ListenAndServe(c.tcpAddr, c.handler)
+	return service.ListenAndServe(c.tcpAddr, c.handler)
 }
 
 // Start [TOWRITE]
-func (c *defaultService) Start() {
+func (c *gactusService) Start() {
 	ctx := context.Background()
 	go func() {
 		err := c.listenTCP()
@@ -66,7 +65,7 @@ func (c *defaultService) Start() {
 }
 
 // Wait [TOWRITE]
-func (c *defaultService) Wait() {
+func (c *gactusService) Wait() {
 	p := make(chan os.Signal, 1)
 	signal.Notify(p, os.Interrupt, syscall.SIGTERM)
 	<-p
@@ -75,7 +74,7 @@ func (c *defaultService) Wait() {
 }
 
 // RegisterProcessors [TOWRITE]
-func (c *defaultService) RegisterProcessors(processors []Processor) error {
+func (c *gactusService) RegisterProcessors(processors []Processor) error {
 	ctx := logger.GetContextWithLogID(context.Background(), c.name)
 	logger.Debugf(ctx, "start registering processors")
 	req := &pb.RegisterProcessorsRequest{
@@ -90,7 +89,7 @@ func (c *defaultService) RegisterProcessors(processors []Processor) error {
 		c.handler.SetProcess(processor.GetCommand(), processor.Process)
 	}
 	res := &pb.RegisterProcessorsResponse{}
-	code := c.SendRequest(ctx, core.CMDCoreRegisterProcessors, req, res)
+	code := c.SendRequest(ctx, config.CMDCoreRegisterProcessors, req, res)
 	if code != uint32(pb.Constant_RESPONSE_OK) {
 		return errors.New(res.GetDebugMessage())
 	}
@@ -98,7 +97,7 @@ func (c *defaultService) RegisterProcessors(processors []Processor) error {
 }
 
 // SendRequest [TOWRITE]
-func (c *defaultService) SendRequest(ctx context.Context, command string, req, res proto.Message) (code uint32) {
+func (c *gactusService) SendRequest(ctx context.Context, command string, req, res proto.Message) (code uint32) {
 	var err error
 	code, err = c.handler.SendCoreRequest(logger.GetLogID(ctx), command, req, res)
 	if err != nil {

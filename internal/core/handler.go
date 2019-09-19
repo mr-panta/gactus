@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/mr-panta/gactus/internal/config"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
 	"github.com/mr-panta/go-tcpclient"
@@ -22,20 +23,13 @@ const (
 )
 
 // Handler [TOWRITE]
-type Handler struct {
+type handler struct {
 	serviceManager *serviceManager
-}
-
-// NewHandler [TOWRITE]
-func NewHandler() *Handler {
-	return &Handler{
-		serviceManager: newServiceManager(),
-	}
 }
 
 // ServeHTTP is used to implement http.Handler,
 // get HTTP request and send back HTTP response.
-func (h *Handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	ctx := context.Background()
 	ctx, logID := generateLogID(ctx, req.Method, req.URL.Path)
 	contentType, err := convertContentType(req.Header)
@@ -112,7 +106,7 @@ func convertContentType(header http.Header) (contentType pb.Constant_ContentType
 
 // ServeTCP is used to implement tcp.Handler
 // and provides TCP connection.
-func (h *Handler) ServeTCP(conn net.Conn) {
+func (h handler) ServeTCP(conn net.Conn) {
 	ctx := logger.GetContextWithLogID(context.Background(), conn.RemoteAddr().String())
 	logger.Debugf(ctx, "new tcp connection is created")
 	for {
@@ -127,7 +121,7 @@ func (h *Handler) ServeTCP(conn net.Conn) {
 
 			// Find core server command
 			switch wrappedReq.Command {
-			case CMDCoreRegisterProcessors:
+			case config.CMDCoreRegisterProcessors:
 				wrappedRes, err = h.serviceManager.registerProcessors(reqCtx, wrappedReq)
 			default:
 				wrappedRes.Code = uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)

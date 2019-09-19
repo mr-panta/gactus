@@ -8,39 +8,38 @@ import (
 	"syscall"
 
 	"github.com/mr-panta/gactus/internal/core"
-	"github.com/mr-panta/gactus/internal/tcp"
 	"github.com/mr-panta/go-logger"
 )
 
-type defaultCore struct {
+type gactusCore struct {
 	httpAddr string
 	tcpAddr  string
-	handler  *core.Handler
+	handler  core.Handler
 }
 
 // NewCore [TOWRITE]
 func NewCore(httpAddr, tcpAddr string) Core {
-	return &defaultCore{
+	return &gactusCore{
 		httpAddr: httpAddr,
 		tcpAddr:  tcpAddr,
 		handler:  core.NewHandler(),
 	}
 }
 
-func (c *defaultCore) listenHTTP() error {
+func (c *gactusCore) listenHTTP() error {
 	ctx := context.Background()
 	logger.Debugf(ctx, "start http server on %s", c.httpAddr)
 	return http.ListenAndServe(c.httpAddr, c.handler)
 }
 
-func (c *defaultCore) listenTCP() error {
+func (c *gactusCore) listenTCP() error {
 	ctx := context.Background()
 	logger.Debugf(ctx, "start tcp server on %s", c.tcpAddr)
-	return tcp.ListenAndServe(c.tcpAddr, c.handler)
+	return core.ListenAndServe(c.tcpAddr, c.handler)
 }
 
 // Start is used to start core server.
-func (c *defaultCore) Start() {
+func (c *gactusCore) Start() {
 	ctx := context.Background()
 	go func() {
 		err := c.listenHTTP()
@@ -57,7 +56,7 @@ func (c *defaultCore) Start() {
 }
 
 // Wait is used to wait for interrupting signal.
-func (c *defaultCore) Wait() {
+func (c *gactusCore) Wait() {
 	p := make(chan os.Signal, 1)
 	signal.Notify(p, os.Interrupt, syscall.SIGTERM)
 	<-p

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"net"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	pb "github.com/mr-panta/gactus/proto"
@@ -11,37 +10,17 @@ import (
 	"github.com/mr-panta/go-tcpclient"
 )
 
-// Handler [TOWRITE]
-type defaultHandler struct {
+type handler struct {
 	coreClient        tcpclient.Client
 	commandProcessMap map[string]func(req, res proto.Message) (code uint32)
 }
 
-// NewHandler [TOWRITE]
-func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod int) (hanlder Handler, err error) {
-	coreClient, err := tcpclient.NewClient(
-		coreAddr,
-		minConns,
-		maxConns,
-		time.Duration(idleConnTimeout)*time.Millisecond,
-		time.Duration(waitConnTimeout)*time.Millisecond,
-		time.Duration(clearPeriod)*time.Millisecond,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &defaultHandler{
-		coreClient:        coreClient,
-		commandProcessMap: make(map[string]func(req, res proto.Message) (code uint32)),
-	}, nil
-}
-
 // SetProcess [TOWRITE]
-func (h *defaultHandler) SetProcess(command string, process func(req, res proto.Message) (code uint32)) {
+func (h *handler) SetProcess(command string, process func(req, res proto.Message) (code uint32)) {
 	h.commandProcessMap[command] = process
 }
 
-func (h *defaultHandler) handleRequest(command string, req, res proto.Message) (code uint32) {
+func (h *handler) handleRequest(command string, req, res proto.Message) (code uint32) {
 	process, exists := h.commandProcessMap[command]
 	if !exists {
 		return uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)
@@ -50,7 +29,7 @@ func (h *defaultHandler) handleRequest(command string, req, res proto.Message) (
 }
 
 // SendCoreRequest is used to send request in bytes form to core server
-func (h *defaultHandler) SendCoreRequest(logID, command string, req, res proto.Message) (code uint32, err error) {
+func (h *handler) SendCoreRequest(logID, command string, req, res proto.Message) (code uint32, err error) {
 	body, err := proto.Marshal(req)
 	if err != nil {
 		return uint32(pb.Constant_RESPONSE_ERROR_SETUP_REQUEST), err
@@ -77,7 +56,7 @@ func (h *defaultHandler) SendCoreRequest(logID, command string, req, res proto.M
 
 // ServeTCP is used to implement tcp.Handler
 // and provides TCP connection.
-func (h *defaultHandler) ServeTCP(conn net.Conn) {
+func (h *handler) ServeTCP(conn net.Conn) {
 	ctx := logger.GetContextWithLogID(context.Background(), conn.RemoteAddr().String())
 	logger.Debugf(ctx, "new tcp connection is created")
 	for {
