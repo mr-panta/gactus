@@ -1,9 +1,12 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"strings"
+
+	"github.com/mr-panta/go-logger"
 
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-tcpclient"
@@ -40,13 +43,14 @@ func (m *serviceManager) getServiceConn(command string) (service tcpclient.Clien
 	return
 }
 
-func (m *serviceManager) registerProcessors(req *pb.RegisterProcessorsRequest, res *pb.RegisterProcessorsResponse) (code uint32) {
+func (m *serviceManager) registerProcessors(ctx context.Context, req *pb.RegisterProcessorsRequest, res *pb.RegisterProcessorsResponse) (code uint32) {
 	for _, registry := range req.ProcessorRegistries {
 		if registry.HttpConfig != nil {
 			method := getMethodString(registry.HttpConfig.Method)
 			route := getRoute(method, registry.HttpConfig.Path)
 			m.routeToCommandMap[route] = registry.Command
 		}
+		logger.Debugf(ctx, "register command[%s] from address[%s]", registry.Command, req.Addr)
 		m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], req.Addr)
 	}
 	return uint32(pb.Constant_RESPONSE_OK)

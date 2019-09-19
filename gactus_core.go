@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/mr-panta/gactus/pkg/core"
-	"github.com/mr-panta/gactus/pkg/tcp"
+	"github.com/mr-panta/gactus/internal/core"
+	"github.com/mr-panta/gactus/internal/tcp"
 	"github.com/mr-panta/go-logger"
 )
 

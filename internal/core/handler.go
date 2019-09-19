@@ -132,7 +132,7 @@ func (h *Handler) ServeTCP(conn net.Conn) {
 		})
 
 		if err != nil {
-			logger.Errorf(ctx, "tcp connection is closed by err=%v", err)
+			logger.Errorf(ctx, "tcp connection is closed by error[%v]", err)
 			return
 		}
 	}
@@ -148,7 +148,7 @@ func (h *Handler) processReservedCommand(ctx context.Context, wrappedReq *pb.Req
 		if err != nil {
 			return nil, err
 		}
-		wrappedRes.Code = h.serviceManager.registerProcessors(req, res)
+		wrappedRes.Code = h.serviceManager.registerProcessors(ctx, req, res)
 		body, err := proto.Marshal(res)
 		if err != nil {
 			return nil, err

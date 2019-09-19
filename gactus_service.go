@@ -8,9 +8,9 @@ import (
 	"syscall"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/mr-panta/gactus/pkg/core"
-	"github.com/mr-panta/gactus/pkg/service"
-	"github.com/mr-panta/gactus/pkg/tcp"
+	"github.com/mr-panta/gactus/internal/core"
+	"github.com/mr-panta/gactus/internal/service"
+	"github.com/mr-panta/gactus/internal/tcp"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
 )
