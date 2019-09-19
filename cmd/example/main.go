@@ -28,7 +28,7 @@ func main() {
 	}
 
 	// Setup and start service server
-	service, err := gactus.NewService("example", coreAddr, tcpAddr, 1, 10, 100, 10, 1000)
+	service, err := gactus.NewService("calculator", coreAddr, tcpAddr, 1, 10, 100, 10, 1000)
 	if err != nil {
 		logger.Fatalf(ctx, err.Error())
 	}
@@ -46,17 +46,32 @@ func main() {
 func getProcessorList() []*gactus.Processor {
 	return []*gactus.Processor{
 		{
-			Command: "example.calculate",
+			Command: "calculator.add",
 			Req:     &pb.CalculateRequest{},
 			Res:     &pb.CalculateResponse{},
 			HTTPConfig: &gtpb.HttpConfig{
 				Method: gtpb.Constant_HTTP_METHOD_POST,
-				Path:   "/calculate",
+				Path:   "/calculator/add",
 			},
 			Process: func(ctx context.Context, req, res proto.Message) (code uint32) {
 				request := req.(*pb.CalculateRequest)
 				response := res.(*pb.CalculateResponse)
 				response.C = request.A + request.B
+				return uint32(gtpb.Constant_RESPONSE_OK)
+			},
+		},
+		{
+			Command: "calculator.substract",
+			Req:     &pb.CalculateRequest{},
+			Res:     &pb.CalculateResponse{},
+			HTTPConfig: &gtpb.HttpConfig{
+				Method: gtpb.Constant_HTTP_METHOD_POST,
+				Path:   "/calculator/substract",
+			},
+			Process: func(ctx context.Context, req, res proto.Message) (code uint32) {
+				request := req.(*pb.CalculateRequest)
+				response := res.(*pb.CalculateResponse)
+				response.C = request.A - request.B
 				return uint32(gtpb.Constant_RESPONSE_OK)
 			},
 		},

@@ -4,12 +4,14 @@ package gactus;
 message Constant {
     enum ResponseCode {
         RESPONSE_OK                    = 0;
-        RESPONSE_COMMAND_NOT_FOUND     = 1;
-        RESPONSE_ERROR_SETUP_REQUEST   = 2;
-        RESPONSE_ERROR_UNPACK_REQUEST  = 3;
-        RESPONSE_ERROR_SETUP_RESPONSE  = 4;
-        RESPONSE_ERROR_UNPACK_RESPONSE = 5;
-        RESPONSE_CREATE_CLIENT_FAILED  = 6;
+
+        // Internal response code
+        RESPONSE_COMMAND_NOT_FOUND     = 100;
+        RESPONSE_ERROR_SETUP_REQUEST   = 101;
+        RESPONSE_ERROR_UNPACK_REQUEST  = 102;
+        RESPONSE_ERROR_SETUP_RESPONSE  = 103;
+        RESPONSE_ERROR_UNPACK_RESPONSE = 104;
+        RESPONSE_CREATE_CLIENT_FAILED  = 105;
     }
 
     enum ContentType {
