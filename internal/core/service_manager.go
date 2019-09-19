@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mr-panta/gactus/internal/config"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/mr-panta/go-logger"
 
@@ -117,7 +119,10 @@ func (m *serviceManager) abandonService(addr string) {
 		}
 		if exists {
 			if len(m.commandToAddrsMap[command]) > 1 {
-				m.commandToAddrsMap[command] = append(m.commandToAddrsMap[command][:idx], m.commandToAddrsMap[command][idx+1:]...)
+				m.commandToAddrsMap[command] = append(
+					m.commandToAddrsMap[command][:idx],
+					m.commandToAddrsMap[command][idx+1:]...,
+				)
 			} else {
 				delete(m.commandToAddrsMap, command)
 				for route, cmd := range m.routeToCommandMap {
@@ -137,7 +142,74 @@ func (m *serviceManager) abandonService(addr string) {
 	}
 }
 
+func wrapAndMarshalRequest(ctx context.Context, command string, req proto.Message) (data []byte, err error) {
+	body, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	logID := logger.GetLogID(ctx)
+	wrappedReq := &pb.Request{
+		Command: command,
+		LogId:   logID,
+		Body:    body,
+		IsProto: true,
+	}
+	data, err = proto.Marshal(wrappedReq)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func unmarshalAndUnwrapResponse(data []byte, res proto.Message) (code uint32, err error) {
+	wrappedRes := &pb.Response{}
+	err = proto.Unmarshal(data, wrappedRes)
+	if err != nil {
+		return uint32(pb.Constant_RESPONSE_ERROR_UNPACK_RESPONSE), err
+	}
+	err = proto.Unmarshal(wrappedRes.Body, res)
+	if err != nil {
+		return wrappedRes.Code, err
+	}
+	return wrappedRes.Code, nil
+}
+
+func updateProcessorRegistries(client tcpclient.Client, data []byte) (err error) {
+	res := &pb.UpdateRegistriesResponse{}
+	output, err := client.Send(data)
+	if err != nil {
+		return fmt.Errorf("cannot send processor registries to service[%s]: %v", client.GetHostAddr(), err)
+	}
+	code, err := unmarshalAndUnwrapResponse(output, res)
+	if err != nil {
+		return fmt.Errorf("cannot unpack wrapped response: %v", err)
+	}
+	if code != uint32(pb.Constant_RESPONSE_OK) {
+		return fmt.Errorf("code[%d]: %s", code, res.DebugMessage)
+	}
+	return nil
+}
+
 func (m *serviceManager) broadcastProcessorRegistries(ctx context.Context) (err error) {
-	logger.Debugf(ctx, "broadcast processor registries") // TODO: implmentation
+	logger.Debugf(ctx, "broadcast processor registries")
+	req := &pb.UpdateRegistriesRequest{}
+	for command, addrs := range m.commandToAddrsMap {
+		for _, addr := range addrs {
+			req.Pairs = append(req.Pairs, &pb.CommandAddressPair{
+				Command: command,
+				Address: addr,
+			})
+		}
+	}
+	data, err := wrapAndMarshalRequest(ctx, config.CMDServiceUpdateRegistries, req)
+	if err != nil {
+		return err
+	}
+	for _, client := range m.addrToClientMap {
+		err = updateProcessorRegistries(client, data)
+		if err != nil {
+			logger.Errorf(ctx, err.Error())
+		}
+	}
 	return nil
 }

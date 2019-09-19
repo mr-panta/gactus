@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"net"
 	"time"
 
@@ -8,19 +9,26 @@ import (
 	"github.com/mr-panta/go-tcpclient"
 )
 
+// Processor [TOWRITE]
+type Processor struct {
+	Req     proto.Message
+	Res     proto.Message
+	Process func(ctx context.Context, req, res proto.Message) (code uint32)
+}
+
 // Handler [TOWRITE]
 type Handler interface {
-	SetProcess(command string, process func(req, res proto.Message) (code uint32))
 	SendCoreRequest(logID, command string, req, res proto.Message) (code uint32, err error)
 	ServeTCP(conn net.Conn)
+	SetProcessor(command string, processor *Processor)
 }
 
 // NewHandler [TOWRITE]
 func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod int) (Handler, error) {
 	coreClient, err := tcpclient.NewClient(
 		coreAddr,
-		minConns,
-		maxConns,
+		0,
+		1,
 		time.Duration(idleConnTimeout)*time.Millisecond,
 		time.Duration(waitConnTimeout)*time.Millisecond,
 		time.Duration(clearPeriod)*time.Millisecond,
@@ -29,8 +37,15 @@ func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTi
 		return nil, err
 	}
 	return &handler{
-		coreClient:        coreClient,
-		commandProcessMap: make(map[string]func(req, res proto.Message) (code uint32)),
+		coreClient:          coreClient,
+		commandProcessorMap: make(map[string]*Processor),
+		commandToAddrsMap:   make(map[string][]string),
+		addrToClient:        make(map[string]tcpclient.Client),
+		minConns:            minConns,
+		maxConns:            maxConns,
+		idleConnTimeout:     time.Duration(idleConnTimeout) * time.Millisecond,
+		waitConnTimeout:     time.Duration(waitConnTimeout) * time.Millisecond,
+		clearPeriod:         time.Duration(clearPeriod) * time.Millisecond,
 	}, nil
 }
 

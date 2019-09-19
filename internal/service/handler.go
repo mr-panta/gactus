@@ -2,30 +2,33 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net"
+	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/mr-panta/gactus/internal/config"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
 	"github.com/mr-panta/go-tcpclient"
 )
 
 type handler struct {
-	coreClient        tcpclient.Client
-	commandProcessMap map[string]func(req, res proto.Message) (code uint32)
+	coreClient          tcpclient.Client
+	commandProcessorMap map[string]*Processor
+	commandToAddrsMap   map[string][]string
+	addrToClient        map[string]tcpclient.Client
+	minConns            int
+	maxConns            int
+	idleConnTimeout     time.Duration
+	waitConnTimeout     time.Duration
+	clearPeriod         time.Duration
 }
 
 // SetProcess [TOWRITE]
-func (h *handler) SetProcess(command string, process func(req, res proto.Message) (code uint32)) {
-	h.commandProcessMap[command] = process
-}
-
-func (h *handler) handleRequest(command string, req, res proto.Message) (code uint32) {
-	process, exists := h.commandProcessMap[command]
-	if !exists {
-		return uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)
-	}
-	return process(req, res)
+func (h *handler) SetProcessor(command string, processor *Processor) {
+	h.commandProcessorMap[command] = processor
 }
 
 // SendCoreRequest is used to send request in bytes form to core server
@@ -68,10 +71,19 @@ func (h *handler) ServeTCP(conn net.Conn) {
 				return nil, err
 			}
 			reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
-			logger.Infof(reqCtx, "request[%v]", wrappedReq)
-			// TODO: process reserve commands
-			// TODO: process general commands
-			_ = h.handleRequest("", nil, nil) // TODO: setup parameters
+			// process reserved commands
+			wrappedRes, err = h.processReservedCommands(reqCtx, wrappedReq)
+			if err != nil {
+				logger.Errorf(reqCtx, err.Error())
+			}
+			if wrappedRes != nil {
+				return proto.Marshal(wrappedRes)
+			}
+			// process general commands
+			wrappedRes, err = h.handleRequest(reqCtx, wrappedReq)
+			if err != nil {
+				logger.Errorf(reqCtx, err.Error())
+			}
 			return proto.Marshal(wrappedRes)
 		})
 
@@ -80,4 +92,98 @@ func (h *handler) ServeTCP(conn net.Conn) {
 			return
 		}
 	}
+}
+
+func (h *handler) processReservedCommands(ctx context.Context, wrappedReq *pb.Request) (
+	wrappedRes *pb.Response, err error) {
+
+	switch wrappedReq.Command {
+	case config.CMDServiceUpdateRegistries:
+		wrappedRes, err = h.updateRegistries(ctx, wrappedReq)
+	case config.CMDServiceHealthCheck:
+	default:
+		wrappedRes = nil
+	}
+	return wrappedRes, err
+}
+
+func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) (
+	wrappedRes *pb.Response, err error) {
+
+	req := &pb.UpdateRegistriesRequest{}
+	res := &pb.UpdateRegistriesResponse{}
+	err = proto.Unmarshal(wrappedReq.Body, req)
+	if err != nil {
+		return nil, err
+	}
+	newAddrMap := make(map[string]bool)
+	oldAddrMap := make(map[string]bool)
+	h.commandToAddrsMap = make(map[string][]string)
+	for _, pair := range req.Pairs {
+		if _, exists := h.addrToClient[pair.Address]; !exists {
+			newAddrMap[pair.Address] = true
+		} else {
+			oldAddrMap[pair.Address] = true
+		}
+		h.commandToAddrsMap[pair.Command] = append(h.commandToAddrsMap[pair.Command], pair.Address)
+	}
+	for addr, client := range h.addrToClient {
+		if exists := oldAddrMap[addr]; !exists {
+			// unused address
+			delete(h.addrToClient, addr)
+			client.Close()
+		}
+	}
+	wrappedRes = &pb.Response{Code: uint32(pb.Constant_RESPONSE_OK)}
+	for addr := range newAddrMap {
+		client, err := tcpclient.NewClient(
+			addr,
+			h.minConns,
+			h.maxConns,
+			h.idleConnTimeout,
+			h.waitConnTimeout,
+			h.clearPeriod,
+		)
+		if err != nil {
+			wrappedRes.Code = uint32(pb.Constant_RESPONSE_CREATE_CLIENT_FAILED)
+			res.DebugMessage += fmt.Sprintf("[cannot tcp connection to service[%s]: %v]", addr, err)
+		} else {
+			h.addrToClient[addr] = client
+		}
+	}
+	wrappedRes.Body, err = proto.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	return wrappedRes, nil
+}
+
+func (h *handler) handleRequest(ctx context.Context, wrappedReq *pb.Request) (
+	wrappedRes *pb.Response, err error) {
+
+	wrappedRes = &pb.Response{Code: uint32(pb.Constant_RESPONSE_OK)}
+	processor, exists := h.commandProcessorMap[wrappedReq.Command]
+	if !exists {
+		wrappedRes.Code = uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)
+		return wrappedRes, nil
+	}
+	req := proto.Clone(processor.Req)
+	res := proto.Clone(processor.Res)
+	if wrappedReq.IsProto {
+		err = proto.Unmarshal(wrappedReq.Body, req)
+	} else {
+		err = json.Unmarshal(wrappedReq.Body, req)
+	}
+	if err != nil {
+		wrappedRes.Code = uint32(pb.Constant_RESPONSE_ERROR_UNPACK_REQUEST)
+		return wrappedRes, err
+	}
+	wrappedRes.Code = processor.Process(ctx, req, res)
+	if wrappedReq.IsProto {
+		wrappedRes.Body, err = proto.Marshal(res)
+	} else {
+		wrappedRes.Body, err = json.Marshal(res)
+	}
+	wrappedRes.Code = uint32(pb.Constant_RESPONSE_ERROR_SETUP_RESPONSE)
+	return wrappedRes, err
 }

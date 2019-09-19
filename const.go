@@ -14,6 +14,6 @@ const (
 
 // Default core addresses
 const (
-	DefaultCoreHTTPAddr = ":8000"
-	DefaultCoreTCPAddr  = ":8001"
+	DefaultCoreHTTPAddr = "127.0.0.1:8000"
+	DefaultCoreTCPAddr  = "127.0.0.1:1739"
 )

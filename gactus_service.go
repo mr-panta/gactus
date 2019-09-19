@@ -15,35 +15,25 @@ import (
 )
 
 type gactusService struct {
-	name            string
-	coreAddr        string
-	tcpAddr         string
-	minConns        int
-	maxConns        int
-	idleConnTimeout int
-	waitConnTimeout int
-	clearPeriod     int
-	handler         service.Handler
+	name     string
+	coreAddr string
+	tcpAddr  string
+	handler  service.Handler
 }
 
 // NewService [TOWRITE]
 func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout,
 	clearPeriod int) (Service, error) {
 
-	handler, err := service.NewHandler(coreAddr, 0, 1, idleConnTimeout, waitConnTimeout, clearPeriod)
+	handler, err := service.NewHandler(coreAddr, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod)
 	if err != nil {
 		return nil, err
 	}
 	return &gactusService{
-		name:            name,
-		coreAddr:        coreAddr,
-		tcpAddr:         tcpAddr,
-		minConns:        minConns,
-		maxConns:        maxConns,
-		idleConnTimeout: idleConnTimeout,
-		waitConnTimeout: waitConnTimeout,
-		clearPeriod:     clearPeriod,
-		handler:         handler,
+		name:     name,
+		coreAddr: coreAddr,
+		tcpAddr:  tcpAddr,
+		handler:  handler,
 	}, nil
 }
 
@@ -74,7 +64,7 @@ func (c *gactusService) Wait() {
 }
 
 // RegisterProcessors [TOWRITE]
-func (c *gactusService) RegisterProcessors(processors []Processor) error {
+func (c *gactusService) RegisterProcessors(processors []*Processor) error {
 	ctx := logger.GetContextWithLogID(context.Background(), c.name)
 	logger.Debugf(ctx, "start registering processors")
 	req := &pb.RegisterProcessorsRequest{
@@ -83,10 +73,14 @@ func (c *gactusService) RegisterProcessors(processors []Processor) error {
 	}
 	for i, processor := range processors {
 		req.ProcessorRegistries[i] = &pb.ProcessorRegistry{
-			Command:    processor.GetCommand(),
-			HttpConfig: processor.GetHTTPConfig(),
+			Command:    processor.Command,
+			HttpConfig: processor.HTTPConfig,
 		}
-		c.handler.SetProcess(processor.GetCommand(), processor.Process)
+		c.handler.SetProcessor(processor.Command, &service.Processor{
+			Req:     processor.Req,
+			Res:     processor.Res,
+			Process: processor.Process,
+		})
 	}
 	res := &pb.RegisterProcessorsResponse{}
 	code := c.SendRequest(ctx, config.CMDCoreRegisterProcessors, req, res)

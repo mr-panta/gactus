@@ -4,6 +4,9 @@ import (
 	"context"
 	"os"
 
+	"github.com/golang/protobuf/proto"
+	pb "github.com/mr-panta/gactus/cmd/example/proto"
+	gtpb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
 
 	"github.com/mr-panta/gactus"
@@ -21,7 +24,7 @@ func main() {
 	// Get TCP address
 	tcpAddr := os.Getenv(gactus.ServiceTCPAddrVar)
 	if tcpAddr == "" {
-		tcpAddr = ":3000"
+		tcpAddr = "127.0.0.1:3000"
 	}
 
 	// Setup and start service server
@@ -40,6 +43,23 @@ func main() {
 	service.Wait()
 }
 
-func getProcessorList() []gactus.Processor {
-	return []gactus.Processor{&calculateProcessor{}}
+func getProcessorList() []*gactus.Processor {
+	return []*gactus.Processor{
+		{
+			Command: "example.calculate",
+			Req:     &pb.CalculateRequest{},
+			Res:     &pb.CalculateResponse{},
+			HTTPConfig: &gtpb.HttpConfig{
+				Method: gtpb.Constant_HTTP_METHOD_POST,
+				Path:   "/calculate",
+			},
+			Process: func(ctx context.Context, req, res proto.Message) (code uint32) {
+				request := req.(*pb.CalculateRequest)
+				response := res.(*pb.CalculateResponse)
+				response.C = request.A + request.B
+				logger.Infof(ctx, "%d + %d = %d", request.A, request.B, response.C)
+				return uint32(gtpb.Constant_RESPONSE_OK)
+			},
+		},
+	}
 }
