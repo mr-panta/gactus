@@ -57,7 +57,6 @@ func getProcessorList() []*gactus.Processor {
 				request := req.(*pb.CalculateRequest)
 				response := res.(*pb.CalculateResponse)
 				response.C = request.A + request.B
-				logger.Infof(ctx, "%d + %d = %d", request.A, request.B, response.C)
 				return uint32(gtpb.Constant_RESPONSE_OK)
 			},
 		},

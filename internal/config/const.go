@@ -14,4 +14,5 @@ const (
 // Error
 const (
 	ErrorServiceNotAvailable = "the internal service is not available"
+	ErrorNotFound            = "not found"
 )

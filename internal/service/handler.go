@@ -100,7 +100,9 @@ func (h *handler) processReservedCommands(ctx context.Context, wrappedReq *pb.Re
 	switch wrappedReq.Command {
 	case config.CMDServiceUpdateRegistries:
 		wrappedRes, err = h.updateRegistries(ctx, wrappedReq)
+
 	case config.CMDServiceHealthCheck:
+		logger.Debugf(ctx, "start doing health check")
 	default:
 		wrappedRes = nil
 	}
@@ -110,6 +112,7 @@ func (h *handler) processReservedCommands(ctx context.Context, wrappedReq *pb.Re
 func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) (
 	wrappedRes *pb.Response, err error) {
 
+	logger.Debugf(ctx, "start updating registries")
 	req := &pb.UpdateRegistriesRequest{}
 	res := &pb.UpdateRegistriesResponse{}
 	err = proto.Unmarshal(wrappedReq.Body, req)
@@ -155,6 +158,7 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 	if err != nil {
 		return nil, err
 	}
+	logger.Debugf(ctx, "successfully update registries")
 	return wrappedRes, nil
 }
 
@@ -184,6 +188,8 @@ func (h *handler) handleRequest(ctx context.Context, wrappedReq *pb.Request) (
 	} else {
 		wrappedRes.Body, err = json.Marshal(res)
 	}
-	wrappedRes.Code = uint32(pb.Constant_RESPONSE_ERROR_SETUP_RESPONSE)
+	if err != nil {
+		wrappedRes.Code = uint32(pb.Constant_RESPONSE_ERROR_SETUP_RESPONSE)
+	}
 	return wrappedRes, err
 }
