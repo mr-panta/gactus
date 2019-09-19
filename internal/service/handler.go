@@ -67,7 +67,8 @@ func (h *handler) ServeTCP(conn net.Conn) {
 			if err != nil {
 				return nil, err
 			}
-			// reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
+			reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
+			logger.Infof(reqCtx, "request[%v]", wrappedReq)
 			// TODO: process reserve commands
 			// TODO: process general commands
 			_ = h.handleRequest("", nil, nil) // TODO: setup parameters

@@ -29,11 +29,14 @@ func main() {
 	if err != nil {
 		logger.Fatalf(ctx, err.Error())
 	}
+	// Start service
+	service.Start()
+	// Register processors
 	err = service.RegisterProcessors(getProcessorList())
 	if err != nil {
 		logger.Fatalf(ctx, err.Error())
 	}
-	service.Start()
+
 	service.Wait()
 }
 

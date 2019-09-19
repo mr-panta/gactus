@@ -60,26 +60,26 @@ func (m *serviceManager) registerProcessors(ctx context.Context, wrappedReq *pb.
 			route := getRoute(method, registry.HttpConfig.Path)
 			m.routeToCommandMap[route] = registry.Command
 		}
-		logger.Debugf(ctx, "register command[%s] from address[%s]", registry.Command, req.Addr)
+		logger.Debugf(ctx, "register command[%s] from address[%s]", registry.Command, req.Address)
 		// Check existing address and commend before adding it
 		isNewAddr := true
 		for _, addr := range m.commandToAddrsMap[registry.Command] {
-			if addr == req.Addr {
+			if addr == req.Address {
 				isNewAddr = false
 				break
 			}
 		}
 		if isNewAddr {
-			m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], req.Addr)
+			m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], req.Address)
 		}
-		if _, exists := m.addrToClientMap[req.Addr]; !exists {
-			client, err := tcpclient.NewClient(req.Addr, 1, 10, 100, 10, 1000) // TODO: use client config from variables
+		if _, exists := m.addrToClientMap[req.Address]; !exists {
+			client, err := tcpclient.NewClient(req.Address, 1, 10, 100, 10, 1000) // TODO: use client config from variables
 			if err != nil {
 				return nil, err
 			}
-			m.addrToClientMap[req.Addr] = client
+			m.addrToClientMap[req.Address] = client
 		}
-		m.addrToActiveTimeMap[req.Addr] = time.Now()
+		m.addrToActiveTimeMap[req.Address] = time.Now()
 	}
 	wrappedRes = &pb.Response{}
 	wrappedRes.Body, err = proto.Marshal(res)
@@ -138,5 +138,6 @@ func (m *serviceManager) abandonService(addr string) {
 }
 
 func (m *serviceManager) broadcastProcessorRegistries(ctx context.Context) (err error) {
+	logger.Debugf(ctx, "broadcast processor registries") // TODO: implmentation
 	return nil
 }

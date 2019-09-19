@@ -46,10 +46,23 @@ message ProcessorRegistry {
 }
 
 message RegisterProcessorsRequest {
-    string   addr                                   = 1;
+    string   address                                = 1;
     repeated ProcessorRegistry processor_registries = 2;
 }
 
+message CommandAddressPair {
+    string command = 1;
+    string address = 2;
+}
+
 message RegisterProcessorsResponse {
+    string debug_message = 1;
+}
+
+message UpdateRegistriesRequest {
+    repeated CommandAddressPair pairs = 1;
+}
+
+message UpdateRegistriesResponse {
     string debug_message = 1;
 }

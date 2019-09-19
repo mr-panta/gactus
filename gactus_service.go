@@ -78,7 +78,7 @@ func (c *gactusService) RegisterProcessors(processors []Processor) error {
 	ctx := logger.GetContextWithLogID(context.Background(), c.name)
 	logger.Debugf(ctx, "start registering processors")
 	req := &pb.RegisterProcessorsRequest{
-		Addr:                c.tcpAddr,
+		Address:             c.tcpAddr,
 		ProcessorRegistries: make([]*pb.ProcessorRegistry, len(processors)),
 	}
 	for i, processor := range processors {
