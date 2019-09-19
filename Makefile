@@ -1,3 +1,7 @@
+# install
+install:
+	go get -u
+
 # setup
 setup:
 	GO111MODULE=on go mod vendor

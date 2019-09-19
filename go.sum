@@ -1,5 +1,7 @@
 github.com/golang/protobuf v1.3.2 h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs=
 github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
+github.com/google/logger v1.0.1 h1:Jtq7/44yDwUXMaLTYgXFC31zpm6Oku7OI/k4//yVANQ=
+github.com/google/logger v1.0.1/go.mod h1:w7O8nrRr0xufejBlQMI83MXqRusvREoJdaAxV+CoAB4=
 github.com/mr-panta/go-logger v0.1.0 h1:q1pZzEHDJx39wqcwTXuRFWEp7y3G9MKLE0PN0dcZXgM=
 github.com/mr-panta/go-logger v0.1.0/go.mod h1:no6zubQjADjB0KyPPtEubDaNXkreMCrRHWL73PWDRr4=
 github.com/mr-panta/go-logger v0.2.0 h1:js555LuvpznFxCkbRnDA1bS3mce9Art8xkaMRm8bAv4=
@@ -12,3 +14,7 @@ github.com/mr-panta/go-tcpclient v0.2.0 h1:isWIMVvhKj33gA1TfKNYVpzOeibaM0oh0bWUM
 github.com/mr-panta/go-tcpclient v0.2.0/go.mod h1:GKizi5C3qW+t0c9MHVX9VCbWIgGNW+qWrmPTsbTUsSE=
 github.com/mr-panta/go-tcpclient v0.3.0 h1:x6HyBYDxok/1qs5eAxzo6mHJWTjrogS3LGJLXhEvolI=
 github.com/mr-panta/go-tcpclient v0.3.0/go.mod h1:OZeSqYcejEel3Pg+FHOvJjRRFm6Qn+wN4dElsLjF9/A=
+github.com/mr-panta/go-tcpclient v0.3.1 h1:/A0JI6EaCJszjXHJrAe2hOyg02baVdu3SgkrLkuC49E=
+github.com/mr-panta/go-tcpclient v0.3.1/go.mod h1:OZeSqYcejEel3Pg+FHOvJjRRFm6Qn+wN4dElsLjF9/A=
+golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+golang.org/x/sys v0.0.0-20190916202348-b4ddaad3f8a3/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

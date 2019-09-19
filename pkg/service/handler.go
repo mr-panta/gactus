@@ -53,7 +53,7 @@ func (h *defaultHandler) SendCoreRequest(logID, command string, req, res proto.M
 	if err != nil {
 		return uint32(pb.Constant_RESPONSE_ERROR_SETUP_REQUEST), err
 	}
-	resData, err := proto.Marshal(&pb.Request{
+	reqData, err := proto.Marshal(&pb.Request{
 		LogId:   logID,
 		Command: command,
 		IsProto: true,
@@ -62,7 +62,7 @@ func (h *defaultHandler) SendCoreRequest(logID, command string, req, res proto.M
 	if err != nil {
 		return uint32(pb.Constant_RESPONSE_ERROR_SETUP_REQUEST), err
 	}
-	data, err := h.coreClient.Send(resData)
+	data, err := h.coreClient.Send(reqData)
 	if err != nil {
 		return uint32(pb.Constant_RESPONSE_ERROR_SETUP_REQUEST), err
 	}

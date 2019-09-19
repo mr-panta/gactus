@@ -29,13 +29,13 @@ func NewCore(httpAddr, tcpAddr string) Core {
 
 func (c *defaultCore) listenHTTP() error {
 	ctx := context.Background()
-	logger.Debugf(ctx, "start HTTP server at %s", c.httpAddr)
+	logger.Debugf(ctx, "start http server at %s", c.httpAddr)
 	return http.ListenAndServe(c.httpAddr, c.handler)
 }
 
 func (c *defaultCore) listenTCP() error {
 	ctx := context.Background()
-	logger.Debugf(ctx, "start TCP server at %s", c.tcpAddr)
+	logger.Debugf(ctx, "start tcp server at %s", c.tcpAddr)
 	return tcp.ListenAndServe(c.tcpAddr, c.handler)
 }
 

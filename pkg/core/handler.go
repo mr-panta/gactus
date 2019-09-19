@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	gactus "github.com/mr-panta/gactus/proto"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
 	"github.com/mr-panta/go-tcpclient"
@@ -59,7 +58,7 @@ func (h *Handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// Setup gactus request
-	gactusReq := &gactus.Request{
+	gactusReq := &pb.Request{
 		Command:     command,
 		LogId:       logID,
 		ContentType: contentType,
@@ -92,20 +91,20 @@ func generateLogID(ctx context.Context, method, path string) (coveredCTX context
 	return coveredCTX, logger.GetLogID(coveredCTX)
 }
 
-func convertContentType(header http.Header) (contentType gactus.Constant_ContentType, err error) {
+func convertContentType(header http.Header) (contentType pb.Constant_ContentType, err error) {
 	cttType := header.Get("Content-Type")
 	cttTypes := strings.Split(cttType, ";")
 	if len(cttTypes) == 0 {
-		contentType = gactus.Constant_CONTENT_TYPE_NULL
+		contentType = pb.Constant_CONTENT_TYPE_UNKNOWN
 		err = errors.New("content-type empty")
 	} else {
 		switch cttTypes[0] {
 		case contentTypeJSON:
-			contentType = gactus.Constant_CONTENT_TYPE_JSON
+			contentType = pb.Constant_CONTENT_TYPE_JSON
 		case contentTypeFormData:
-			contentType = gactus.Constant_CONTENT_TYPE_FORM_DATA
+			contentType = pb.Constant_CONTENT_TYPE_FORM_DATA
 		case contentTypeXWWWFormURLencoded:
-			contentType = gactus.Constant_CONTENT_TYPE_X_WWW_FORM_URLENCODED
+			contentType = pb.Constant_CONTENT_TYPE_X_WWW_FORM_URLENCODED
 		}
 	}
 	return
@@ -115,7 +114,7 @@ func convertContentType(header http.Header) (contentType gactus.Constant_Content
 // and provides TCP connection.
 func (h *Handler) ServeTCP(conn net.Conn) {
 	ctx := context.Background()
-	logger.Debugf(ctx, "new TCP connection is created")
+	logger.Debugf(ctx, "new tcp connection is created")
 	for {
 		err := tcpclient.Reader(conn, func(input []byte) ([]byte, error) {
 			wrappedReq := &pb.Request{}
@@ -124,15 +123,38 @@ func (h *Handler) ServeTCP(conn net.Conn) {
 				return nil, err
 			}
 			reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
-			// TODO: handle register data from service
+			wrappedRes, err := h.processReservedCommand(reqCtx, wrappedReq)
+			if err != nil {
+				return nil, err
+			}
 			// TODO: handle request from service
-			req := &pb.RegisterProcessorsRequest{}
-			_ = proto.Unmarshal(wrappedReq.Body, req)
-			logger.Infof(reqCtx, "%v", req)
-			return nil, nil
+			return proto.Marshal(wrappedRes)
 		})
+
 		if err != nil {
-			logger.Errorf(ctx, err.Error())
+			logger.Errorf(ctx, "tcp connection is closed by err=%v", err)
+			return
 		}
 	}
+}
+
+func (h *Handler) processReservedCommand(ctx context.Context, wrappedReq *pb.Request) (wrappedRes *pb.Response, err error) {
+	wrappedRes = &pb.Response{}
+	switch wrappedReq.Command {
+	case CMDCoreRegisterProcessors:
+		req := &pb.RegisterProcessorsRequest{}
+		res := &pb.RegisterProcessorsResponse{}
+		err = proto.Unmarshal(wrappedReq.Body, req)
+		if err != nil {
+			return nil, err
+		}
+		wrappedRes.Code = h.serviceManager.registerProcessors(req, res)
+		body, err := proto.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+		wrappedRes.Body = body
+		return wrappedRes, nil
+	}
+	return nil, nil
 }

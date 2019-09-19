@@ -17,8 +17,3 @@ const (
 	DefaultCoreHTTPAddr = ":8000"
 	DefaultCoreTCPAddr  = ":8001"
 )
-
-// Default command
-const (
-	CMDRegisterProcessors = "core.register_processors"
-)

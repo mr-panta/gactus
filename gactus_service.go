@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/mr-panta/gactus/pkg/core"
 	"github.com/mr-panta/gactus/pkg/service"
 	"github.com/mr-panta/gactus/pkg/tcp"
 	pb "github.com/mr-panta/gactus/proto"
@@ -46,7 +47,7 @@ func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTime
 
 func (c *defaultService) listenTCP() error {
 	ctx := context.Background()
-	logger.Debugf(ctx, "start TCP server at %s", c.tcpAddr)
+	logger.Debugf(ctx, "start tcp server at %s", c.tcpAddr)
 	return tcp.ListenAndServe(c.tcpAddr, c.handler)
 }
 
@@ -86,7 +87,7 @@ func (c *defaultService) RegisterProcessors(processors []Processor) error {
 		c.handler.SetProcess(processor.GetCommand(), processor.Process)
 	}
 	res := &pb.RegisterProcessorsResponse{}
-	code := c.SendRequest(ctx, CMDRegisterProcessors, req, res)
+	code := c.SendRequest(ctx, core.CMDCoreRegisterProcessors, req, res)
 	if code != uint32(pb.Constant_RESPONSE_OK) {
 		return errors.New(res.GetDebugMessage())
 	}
