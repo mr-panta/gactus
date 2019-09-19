@@ -113,21 +113,29 @@ func convertContentType(header http.Header) (contentType pb.Constant_ContentType
 // ServeTCP is used to implement tcp.Handler
 // and provides TCP connection.
 func (h *Handler) ServeTCP(conn net.Conn) {
-	ctx := context.Background()
+	ctx := logger.GetContextWithLogID(context.Background(), conn.RemoteAddr().String())
 	logger.Debugf(ctx, "new tcp connection is created")
 	for {
 		err := tcpclient.Reader(conn, func(input []byte) ([]byte, error) {
 			wrappedReq := &pb.Request{}
+			wrappedRes := &pb.Response{}
 			err := proto.Unmarshal(input, wrappedReq)
 			if err != nil {
 				return nil, err
 			}
 			reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
-			wrappedRes, err := h.processReservedCommand(reqCtx, wrappedReq)
+
+			// Find core server command
+			switch wrappedReq.Command {
+			case CMDCoreRegisterProcessors:
+				wrappedRes, err = h.serviceManager.registerProcessors(reqCtx, wrappedReq)
+			default:
+				wrappedRes.Code = uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)
+			}
 			if err != nil {
 				return nil, err
 			}
-			// TODO: handle request from service
+
 			return proto.Marshal(wrappedRes)
 		})
 
@@ -136,25 +144,4 @@ func (h *Handler) ServeTCP(conn net.Conn) {
 			return
 		}
 	}
-}
-
-func (h *Handler) processReservedCommand(ctx context.Context, wrappedReq *pb.Request) (wrappedRes *pb.Response, err error) {
-	wrappedRes = &pb.Response{}
-	switch wrappedReq.Command {
-	case CMDCoreRegisterProcessors:
-		req := &pb.RegisterProcessorsRequest{}
-		res := &pb.RegisterProcessorsResponse{}
-		err = proto.Unmarshal(wrappedReq.Body, req)
-		if err != nil {
-			return nil, err
-		}
-		wrappedRes.Code = h.serviceManager.registerProcessors(ctx, req, res)
-		body, err := proto.Marshal(res)
-		if err != nil {
-			return nil, err
-		}
-		wrappedRes.Body = body
-		return wrappedRes, nil
-	}
-	return nil, nil
 }

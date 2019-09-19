@@ -1,11 +1,13 @@
 package service
 
 import (
+	"context"
 	"net"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	pb "github.com/mr-panta/gactus/proto"
+	"github.com/mr-panta/go-logger"
 	"github.com/mr-panta/go-tcpclient"
 )
 
@@ -42,7 +44,7 @@ func (h *defaultHandler) SetProcess(command string, process func(req, res proto.
 func (h *defaultHandler) handleRequest(command string, req, res proto.Message) (code uint32) {
 	process, exists := h.commandProcessMap[command]
 	if !exists {
-		return uint32(pb.Constant_RESPONSE_PROCESS_NOT_FOUND)
+		return uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)
 	}
 	return process(req, res)
 }
@@ -75,4 +77,27 @@ func (h *defaultHandler) SendCoreRequest(logID, command string, req, res proto.M
 
 // ServeTCP is used to implement tcp.Handler
 // and provides TCP connection.
-func (h *defaultHandler) ServeTCP(conn net.Conn) {}
+func (h *defaultHandler) ServeTCP(conn net.Conn) {
+	ctx := logger.GetContextWithLogID(context.Background(), conn.RemoteAddr().String())
+	logger.Debugf(ctx, "new tcp connection is created")
+	for {
+		err := tcpclient.Reader(conn, func(input []byte) ([]byte, error) {
+			wrappedReq := &pb.Request{}
+			wrappedRes := &pb.Response{}
+			err := proto.Unmarshal(input, wrappedReq)
+			if err != nil {
+				return nil, err
+			}
+			// reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
+			// TODO: process reserve commands
+			// TODO: process general commands
+			_ = h.handleRequest("", nil, nil) // TODO: setup parameters
+			return proto.Marshal(wrappedRes)
+		})
+
+		if err != nil {
+			logger.Errorf(ctx, "tcp connection is closed by error[%v]", err)
+			return
+		}
+	}
+}

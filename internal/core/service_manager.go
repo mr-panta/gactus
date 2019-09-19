@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/mr-panta/go-logger"
 
 	pb "github.com/mr-panta/gactus/proto"
@@ -43,7 +44,13 @@ func (m *serviceManager) getServiceConn(command string) (service tcpclient.Clien
 	return
 }
 
-func (m *serviceManager) registerProcessors(ctx context.Context, req *pb.RegisterProcessorsRequest, res *pb.RegisterProcessorsResponse) (code uint32) {
+func (m *serviceManager) registerProcessors(ctx context.Context, wrappedReq *pb.Request) (wrappedRes *pb.Response, err error) {
+	req := &pb.RegisterProcessorsRequest{}
+	res := &pb.RegisterProcessorsResponse{}
+	err = proto.Unmarshal(wrappedReq.Body, req)
+	if err != nil {
+		return nil, err
+	}
 	for _, registry := range req.ProcessorRegistries {
 		if registry.HttpConfig != nil {
 			method := getMethodString(registry.HttpConfig.Method)
@@ -51,9 +58,25 @@ func (m *serviceManager) registerProcessors(ctx context.Context, req *pb.Registe
 			m.routeToCommandMap[route] = registry.Command
 		}
 		logger.Debugf(ctx, "register command[%s] from address[%s]", registry.Command, req.Addr)
-		m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], req.Addr)
+		// Check existing address and commend before adding it
+		isNewAddr := true
+		for _, addr := range m.commandToAddrsMap[registry.Command] {
+			if addr == req.Addr {
+				isNewAddr = false
+				break
+			}
+		}
+		if isNewAddr {
+			m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], req.Addr)
+		}
 	}
-	return uint32(pb.Constant_RESPONSE_OK)
+	wrappedRes = &pb.Response{}
+	wrappedRes.Body, err = proto.Marshal(res)
+	wrappedRes.Code = uint32(pb.Constant_RESPONSE_OK)
+	if err != nil {
+		return nil, err
+	}
+	return wrappedRes, nil
 }
 
 func getRoute(method, path string) string {

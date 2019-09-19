@@ -16,38 +16,41 @@ import (
 )
 
 type defaultService struct {
-	name     string
-	coreAddr string
-	tcpAddr  string
-	handler  service.Handler
+	name            string
+	coreAddr        string
+	tcpAddr         string
+	minConns        int
+	maxConns        int
+	idleConnTimeout int
+	waitConnTimeout int
+	clearPeriod     int
+	handler         service.Handler
 }
 
 // NewService [TOWRITE]
 func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTimeout,
 	waitConnTimeout, clearPeriod int) (Service, error) {
 
-	handler, err := service.NewHandler(
-		coreAddr,
-		minConns,
-		maxConns,
-		idleConnTimeout,
-		waitConnTimeout,
-		clearPeriod,
-	)
+	handler, err := service.NewHandler(coreAddr, 0, 1, idleConnTimeout, waitConnTimeout, clearPeriod)
 	if err != nil {
 		return nil, err
 	}
 	return &defaultService{
-		name:     name,
-		coreAddr: coreAddr,
-		tcpAddr:  tcpAddr,
-		handler:  handler,
+		name:            name,
+		coreAddr:        coreAddr,
+		tcpAddr:         tcpAddr,
+		minConns:        minConns,
+		maxConns:        maxConns,
+		idleConnTimeout: idleConnTimeout,
+		waitConnTimeout: waitConnTimeout,
+		clearPeriod:     clearPeriod,
+		handler:         handler,
 	}, nil
 }
 
 func (c *defaultService) listenTCP() error {
 	ctx := context.Background()
-	logger.Debugf(ctx, "start tcp server at %s", c.tcpAddr)
+	logger.Debugf(ctx, "start tcp server on %s", c.tcpAddr)
 	return tcp.ListenAndServe(c.tcpAddr, c.handler)
 }
 

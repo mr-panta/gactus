@@ -4,7 +4,7 @@ package gactus;
 message Constant {
     enum ResponseCode {
         RESPONSE_OK                  = 0;
-        RESPONSE_PROCESS_NOT_FOUND   = 1;
+        RESPONSE_COMMAND_NOT_FOUND   = 1;
         RESPONSE_ERROR_SETUP_REQUEST = 2;
     }
 

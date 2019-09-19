@@ -1,6 +1,7 @@
 # install
 install:
 	go get -u
+	make setup
 
 # setup
 setup:
