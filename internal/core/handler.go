@@ -128,6 +128,11 @@ func (h handler) ServeTCP(conn net.Conn) {
 			switch wrappedReq.Command {
 			case config.CMDCoreRegisterProcessors:
 				wrappedRes, err = h.serviceManager.registerProcessors(reqCtx, wrappedReq)
+				bcErr := h.serviceManager.broadcastProcessorRegistries(reqCtx)
+				if bcErr != nil {
+					logger.Errorf(ctx, "cannot broadcast processor registries: error[%v]", bcErr)
+				}
+
 			default:
 				wrappedRes.Code = uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)
 			}

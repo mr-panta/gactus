@@ -72,6 +72,13 @@ func (m *serviceManager) registerProcessors(ctx context.Context, wrappedReq *pb.
 		if isNewAddr {
 			m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], req.Addr)
 		}
+		if _, exists := m.addrToClientMap[req.Addr]; !exists {
+			client, err := tcpclient.NewClient(req.Addr, 1, 10, 100, 10, 1000) // TODO: use client config from variables
+			if err != nil {
+				return nil, err
+			}
+			m.addrToClientMap[req.Addr] = client
+		}
 		m.addrToActiveTimeMap[req.Addr] = time.Now()
 	}
 	wrappedRes = &pb.Response{}
@@ -128,4 +135,8 @@ func (m *serviceManager) abandonService(addr string) {
 	if _, exists := m.addrToActiveTimeMap[addr]; exists {
 		delete(m.addrToActiveTimeMap, addr)
 	}
+}
+
+func (m *serviceManager) broadcastProcessorRegistries(ctx context.Context) (err error) {
+	return nil
 }
