@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -49,6 +50,51 @@ func (m *serviceManager) getServiceConn(command string) (service tcpclient.Clien
 	return
 }
 
+func serviceHealthCheck(ctx context.Context, client tcpclient.Client) (res *pb.HealthCheckResponse, err error) {
+	req := &pb.HealthCheckRequest{}
+	res = &pb.HealthCheckResponse{}
+	body, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	wrappedReq := &pb.Request{
+		LogId:   logger.GetLogID(ctx),
+		Command: config.CMDServiceHealthCheck,
+		IsProto: true,
+		Body:    body,
+	}
+	input, err := proto.Marshal(wrappedReq)
+	if err != nil {
+		return nil, err
+	}
+	output, err := client.Send(input)
+	if err != nil {
+		return nil, err
+	}
+	code, err := unmarshalAndUnwrapResponse(output, res)
+	if err != nil {
+		return nil, err
+	}
+	if code != uint32(pb.Constant_RESPONSE_OK) {
+		return nil, errors.New(res.DebugMessage)
+	}
+	return res, nil
+}
+
+func verifyServiceAddresses(ctx context.Context, addrs []string) (addr string, err error) {
+	for _, addr := range addrs {
+		client, err := tcpclient.NewClient(addr, 1, 1, 0, 0, time.Second)
+		if err == nil {
+			_, err = serviceHealthCheck(ctx, client)
+			if err == nil {
+				return addr, nil
+			}
+		}
+		client.Close()
+	}
+	return "", errors.New("cannot verify service addresses")
+}
+
 func (m *serviceManager) registerProcessors(ctx context.Context, wrappedReq *pb.Request) (wrappedRes *pb.Response, err error) {
 	req := &pb.RegisterProcessorsRequest{}
 	res := &pb.RegisterProcessorsResponse{}
@@ -56,32 +102,38 @@ func (m *serviceManager) registerProcessors(ctx context.Context, wrappedReq *pb.
 	if err != nil {
 		return nil, err
 	}
+	// Check usable IP Address
+	serviceAddr, err := verifyServiceAddresses(ctx, req.Addresses)
+	if err != nil {
+		return nil, err
+	}
+	// Update processors registries
 	for _, registry := range req.ProcessorRegistries {
 		if registry.HttpConfig != nil {
 			method := getMethodString(registry.HttpConfig.Method)
 			route := getRoute(method, registry.HttpConfig.Path)
 			m.routeToCommandMap[route] = registry.Command
 		}
-		logger.Debugf(ctx, "register command[%s] from address[%s]", registry.Command, req.Address)
+		logger.Debugf(ctx, "register command[%s] from address[%s]", registry.Command, serviceAddr)
 		// Check existing address and commend before adding it
 		isNewAddr := true
 		for _, addr := range m.commandToAddrsMap[registry.Command] {
-			if addr == req.Address {
+			if addr == serviceAddr {
 				isNewAddr = false
 				break
 			}
 		}
 		if isNewAddr {
-			m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], req.Address)
+			m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], serviceAddr)
 		}
-		if _, exists := m.addrToClientMap[req.Address]; !exists {
-			client, err := tcpclient.NewClient(req.Address, 1, 10, 100, 10, 1000) // TODO: use client config from variables
+		if _, exists := m.addrToClientMap[serviceAddr]; !exists {
+			client, err := tcpclient.NewClient(serviceAddr, 1, 1, 100, 10, 1000) // TODO: use client config from variables
 			if err != nil {
 				return nil, err
 			}
-			m.addrToClientMap[req.Address] = client
+			m.addrToClientMap[serviceAddr] = client
 		}
-		m.addrToActiveTimeMap[req.Address] = time.Now()
+		m.addrToActiveTimeMap[serviceAddr] = time.Now()
 	}
 	wrappedRes = &pb.Response{}
 	wrappedRes.Body, err = proto.Marshal(res)

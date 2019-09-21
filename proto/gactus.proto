@@ -3,7 +3,7 @@ package gactus;
 
 message Constant {
     enum ResponseCode {
-        RESPONSE_OK                    = 0;
+        RESPONSE_OK = 0;
 
         // Internal response code
         RESPONSE_COMMAND_NOT_FOUND     = 100;
@@ -51,14 +51,14 @@ message ProcessorRegistry {
     HttpConfig http_config = 2;
 }
 
-message RegisterProcessorsRequest {
-    string   address                                = 1;
-    repeated ProcessorRegistry processor_registries = 2;
-}
-
 message CommandAddressPair {
     string command = 1;
     string address = 2;
+}
+
+message RegisterProcessorsRequest {
+    repeated string            addresses            = 1;
+    repeated ProcessorRegistry processor_registries = 2;
 }
 
 message RegisterProcessorsResponse {
@@ -70,5 +70,12 @@ message UpdateRegistriesRequest {
 }
 
 message UpdateRegistriesResponse {
+    string debug_message = 1;
+}
+
+message HealthCheckRequest {
+}
+
+message HealthCheckResponse {
     string debug_message = 1;
 }

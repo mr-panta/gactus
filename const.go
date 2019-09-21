@@ -2,18 +2,18 @@ package gactus
 
 // Environment core variables
 const (
-	CoreHTTPAddrVar = "GACTUS_CORE_HTTP_ADDR"
-	CoreTCPAddrVar  = "GACTUS_CORE_TCP_ADDR"
+	CoreHTTPPortVar = "GACTUS_CORE_HTTP_PORT"
+	CoreTCPPortVar  = "GACTUS_CORE_TCP_PORT"
 )
 
 // Environment service variables
 const (
 	ServiceCoreAddrVar = "GACTUS_SERVICE_CORE_ADDR"
-	ServiceTCPAddrVar  = "GACTUS_SERVICE_TCP_ADDR"
+	ServiceTCPPortVar  = "GACTUS_SERVICE_TCP_PORT"
 )
 
 // Default core addresses
 const (
-	DefaultCoreHTTPAddr = "127.0.0.1:8000"
-	DefaultCoreTCPAddr  = "127.0.0.1:1739"
+	DefaultCoreHTTPPort = 8000
+	DefaultCoreTCPPort  = 1739
 )

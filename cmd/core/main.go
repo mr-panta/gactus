@@ -2,25 +2,25 @@ package main
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/mr-panta/gactus"
 )
 
 func main() {
-	// Get HTTP address
-	httpAddr := os.Getenv(gactus.CoreHTTPAddrVar)
-	if httpAddr == "" {
-		httpAddr = gactus.DefaultCoreHTTPAddr
+	// Get HTTP port
+	httpPort, err := strconv.Atoi(os.Getenv(gactus.CoreHTTPPortVar))
+	if err != nil {
+		httpPort = gactus.DefaultCoreHTTPPort
 	}
 
-	// Get TCP address
-	tcpAddr := os.Getenv(gactus.CoreTCPAddrVar)
-	if tcpAddr == "" {
-		tcpAddr = gactus.DefaultCoreTCPAddr
+	// Get TCP port
+	tcpPort, err := strconv.Atoi(os.Getenv(gactus.CoreTCPPortVar))
+	if err != nil {
+		tcpPort = gactus.DefaultCoreTCPPort
 	}
 
-	// Setup and start core server
-	core := gactus.NewCore(httpAddr, tcpAddr)
+	core := gactus.NewCore(httpPort, tcpPort)
 	core.Start()
 	core.Wait()
 }

@@ -71,7 +71,7 @@ func (h *handler) ServeTCP(conn net.Conn) {
 				return nil, err
 			}
 			reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
-			// process reserved commands
+			// Process reserved commands
 			wrappedRes, err = h.processReservedCommands(reqCtx, wrappedReq)
 			if err != nil {
 				logger.Errorf(reqCtx, err.Error())
@@ -79,7 +79,7 @@ func (h *handler) ServeTCP(conn net.Conn) {
 			if wrappedRes != nil {
 				return proto.Marshal(wrappedRes)
 			}
-			// process general commands
+			// Process general commands
 			wrappedRes, err = h.handleRequest(reqCtx, wrappedReq)
 			if err != nil {
 				logger.Errorf(reqCtx, err.Error())
@@ -88,7 +88,7 @@ func (h *handler) ServeTCP(conn net.Conn) {
 		})
 
 		if err != nil {
-			logger.Errorf(ctx, "tcp connection is closed by error[%v]", err)
+			logger.Warnf(ctx, "tcp connection is closed by error[%v]", err)
 			return
 		}
 	}
@@ -100,9 +100,8 @@ func (h *handler) processReservedCommands(ctx context.Context, wrappedReq *pb.Re
 	switch wrappedReq.Command {
 	case config.CMDServiceUpdateRegistries:
 		wrappedRes, err = h.updateRegistries(ctx, wrappedReq)
-
 	case config.CMDServiceHealthCheck:
-		logger.Debugf(ctx, "start doing health check")
+		wrappedRes, err = h.healthCheck(ctx, wrappedReq)
 	default:
 		wrappedRes = nil
 	}
@@ -153,6 +152,25 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 		} else {
 			h.addrToClient[addr] = client
 		}
+	}
+	wrappedRes.Body, err = proto.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	logger.Debugf(ctx, "successfully update registries")
+	return wrappedRes, nil
+}
+
+func (h *handler) healthCheck(ctx context.Context, wrappedReq *pb.Request) (
+	wrappedRes *pb.Response, err error) {
+
+	logger.Debugf(ctx, "start health checking")
+	wrappedRes = &pb.Response{}
+	req := &pb.HealthCheckRequest{}
+	res := &pb.HealthCheckResponse{}
+	err = proto.Unmarshal(wrappedReq.Body, req)
+	if err != nil {
+		return nil, err
 	}
 	wrappedRes.Body, err = proto.Marshal(res)
 	if err != nil {

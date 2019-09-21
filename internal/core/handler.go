@@ -156,6 +156,9 @@ func (h handler) ServeTCP(conn net.Conn) {
 			switch wrappedReq.Command {
 			case config.CMDCoreRegisterProcessors:
 				wrappedRes, err = h.serviceManager.registerProcessors(reqCtx, wrappedReq)
+				if err != nil {
+					logger.Errorf(ctx, "cannot register processors: error[%v]", err)
+				}
 				bcErr := h.serviceManager.broadcastProcessorRegistries(reqCtx)
 				if bcErr != nil {
 					logger.Errorf(ctx, "cannot broadcast processor registries: error[%v]", bcErr)
@@ -171,7 +174,7 @@ func (h handler) ServeTCP(conn net.Conn) {
 		})
 
 		if err != nil {
-			logger.Errorf(ctx, "tcp connection is closed by error[%v]", err)
+			logger.Warnf(ctx, "tcp connection is closed by error[%v]", err)
 			return
 		}
 	}

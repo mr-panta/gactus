@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	pb "github.com/mr-panta/gactus/cmd/example/proto"
@@ -18,13 +20,13 @@ func main() {
 	// Get core address
 	coreAddr := os.Getenv(gactus.ServiceCoreAddrVar)
 	if coreAddr == "" {
-		coreAddr = gactus.DefaultCoreTCPAddr
+		coreAddr = fmt.Sprintf("127.0.0.1:%d", gactus.DefaultCoreTCPPort)
 	}
 
 	// Get TCP address
-	tcpAddr := os.Getenv(gactus.ServiceTCPAddrVar)
-	if tcpAddr == "" {
-		tcpAddr = "127.0.0.1:3000"
+	tcpAddr, err := strconv.Atoi(os.Getenv(gactus.ServiceTCPPortVar))
+	if err != nil {
+		tcpAddr = 3000
 	}
 
 	// Setup and start service server

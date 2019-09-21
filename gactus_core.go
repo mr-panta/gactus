@@ -2,6 +2,7 @@ package gactus
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,30 +13,30 @@ import (
 )
 
 type gactusCore struct {
-	httpAddr string
-	tcpAddr  string
+	httpPort int
+	tcpPort  int
 	handler  core.Handler
 }
 
 // NewCore [TOWRITE]
-func NewCore(httpAddr, tcpAddr string) Core {
+func NewCore(httpPort, tcpPort int) Core {
 	return &gactusCore{
-		httpAddr: httpAddr,
-		tcpAddr:  tcpAddr,
+		httpPort: httpPort,
+		tcpPort:  tcpPort,
 		handler:  core.NewHandler(),
 	}
 }
 
 func (c *gactusCore) listenHTTP() error {
 	ctx := context.Background()
-	logger.Debugf(ctx, "start http server on %s", c.httpAddr)
-	return http.ListenAndServe(c.httpAddr, c.handler)
+	logger.Debugf(ctx, "start http server on port %d", c.httpPort)
+	return http.ListenAndServe(fmt.Sprintf(":%d", c.httpPort), c.handler)
 }
 
 func (c *gactusCore) listenTCP() error {
 	ctx := context.Background()
-	logger.Debugf(ctx, "start tcp server on %s", c.tcpAddr)
-	return core.ListenAndServe(c.tcpAddr, c.handler)
+	logger.Debugf(ctx, "start tcp server on port %d", c.tcpPort)
+	return core.ListenAndServe(fmt.Sprintf(":%d", c.tcpPort), c.handler)
 }
 
 // Start is used to start core server.

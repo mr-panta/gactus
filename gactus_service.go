@@ -3,9 +3,12 @@ package gactus
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/mr-panta/gactus/internal/util"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/mr-panta/gactus/internal/config"
@@ -17,12 +20,12 @@ import (
 type gactusService struct {
 	name     string
 	coreAddr string
-	tcpAddr  string
+	tcpPort  int
 	handler  service.Handler
 }
 
 // NewService [TOWRITE]
-func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout,
+func NewService(name, coreAddr string, tcpPort, minConns, maxConns, idleConnTimeout, waitConnTimeout,
 	clearPeriod int) (Service, error) {
 
 	handler, err := service.NewHandler(coreAddr, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod)
@@ -32,15 +35,15 @@ func NewService(name, coreAddr, tcpAddr string, minConns, maxConns, idleConnTime
 	return &gactusService{
 		name:     name,
 		coreAddr: coreAddr,
-		tcpAddr:  tcpAddr,
+		tcpPort:  tcpPort,
 		handler:  handler,
 	}, nil
 }
 
 func (c *gactusService) listenTCP() error {
 	ctx := context.Background()
-	logger.Debugf(ctx, "start tcp server on %s", c.tcpAddr)
-	return service.ListenAndServe(c.tcpAddr, c.handler)
+	logger.Debugf(ctx, "start tcp server on port %d", c.tcpPort)
+	return service.ListenAndServe(fmt.Sprintf(":%d", c.tcpPort), c.handler)
 }
 
 // Start [TOWRITE]
@@ -67,8 +70,15 @@ func (c *gactusService) Wait() {
 func (c *gactusService) RegisterProcessors(processors []*Processor) error {
 	ctx := logger.GetContextWithLogID(context.Background(), c.name)
 	logger.Debugf(ctx, "start registering processors")
+	addrs, err := util.GetIPAddrs()
+	if err != nil {
+		return err
+	}
+	for i := range addrs {
+		addrs[i] = fmt.Sprintf("%s:%d", addrs[i], c.tcpPort)
+	}
 	req := &pb.RegisterProcessorsRequest{
-		Address:             c.tcpAddr,
+		Addresses:           addrs,
 		ProcessorRegistries: make([]*pb.ProcessorRegistry, len(processors)),
 	}
 	for i, processor := range processors {
