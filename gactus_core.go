@@ -19,11 +19,11 @@ type gactusCore struct {
 }
 
 // NewCore [TOWRITE]
-func NewCore(httpPort, tcpPort int) Core {
+func NewCore(httpPort, tcpPort, healthCheckInterval int) Core {
 	return &gactusCore{
 		httpPort: httpPort,
 		tcpPort:  tcpPort,
-		handler:  core.NewHandler(),
+		handler:  core.NewHandler(healthCheckInterval),
 	}
 }
 

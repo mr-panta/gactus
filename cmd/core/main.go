@@ -20,7 +20,13 @@ func main() {
 		tcpPort = gactus.DefaultCoreTCPPort
 	}
 
-	core := gactus.NewCore(httpPort, tcpPort)
+	// Get health check interval
+	healthCheckInterval, err := strconv.Atoi(os.Getenv(gactus.CoreDefaultHealthCheckIntervalVar))
+	if err != nil {
+		healthCheckInterval = gactus.DefaultHealthCheckInterval
+	}
+
+	core := gactus.NewCore(httpPort, tcpPort, healthCheckInterval)
 	core.Start()
 	core.Wait()
 }

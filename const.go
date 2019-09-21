@@ -2,8 +2,9 @@ package gactus
 
 // Environment core variables
 const (
-	CoreHTTPPortVar = "GACTUS_CORE_HTTP_PORT"
-	CoreTCPPortVar  = "GACTUS_CORE_TCP_PORT"
+	CoreHTTPPortVar                   = "GACTUS_CORE_HTTP_PORT"
+	CoreTCPPortVar                    = "GACTUS_CORE_TCP_PORT"
+	CoreDefaultHealthCheckIntervalVar = "GACTUS_CORE_HEALTH_CHECK_INTERVAL"
 )
 
 // Environment service variables
@@ -14,6 +15,7 @@ const (
 
 // Default core addresses
 const (
-	DefaultCoreHTTPPort = 8000
-	DefaultCoreTCPPort  = 1739
+	DefaultCoreHTTPPort        = 8000
+	DefaultCoreTCPPort         = 1739
+	DefaultHealthCheckInterval = 300
 )

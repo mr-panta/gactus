@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-tcpclient"
 )
 
@@ -43,7 +42,6 @@ func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTi
 		commandProcessorMap: make(map[string]*Processor),
 		commandToAddrsMap:   make(map[string][]string),
 		addrToClientMap:     make(map[string]tcpclient.Client),
-		addrToConnConfigMap: make(map[string]*pb.ConnectionConfig),
 		minConns:            minConns,
 		maxConns:            maxConns,
 		idleConnTimeout:     time.Duration(idleConnTimeout) * time.Millisecond,

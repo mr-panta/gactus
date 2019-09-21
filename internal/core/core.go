@@ -12,9 +12,9 @@ type Handler interface {
 }
 
 // NewHandler [TOWRITE]
-func NewHandler() Handler {
+func NewHandler(healthCheckInterval int) Handler {
 	return &handler{
-		serviceManager: newServiceManager(),
+		serviceManager: newServiceManager(healthCheckInterval),
 	}
 }
 

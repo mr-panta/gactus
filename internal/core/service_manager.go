@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mr-panta/gactus/internal/config"
@@ -18,21 +19,26 @@ import (
 )
 
 type serviceManager struct {
-	routeToCommandMap   map[string]string // key format = `method:path`
+	routeToCommandMap   map[string]string
 	commandToAddrsMap   map[string][]string
 	addrToClientMap     map[string]tcpclient.Client
 	addrToActiveTimeMap map[string]time.Time
 	addrToConnConfigMap map[string]*pb.ConnectionConfig
+	healthCheckInterval time.Duration
+	lock                sync.Mutex
 }
 
-func newServiceManager() *serviceManager {
-	return &serviceManager{
+func newServiceManager(healthCheckInterval int) *serviceManager {
+	m := &serviceManager{
 		routeToCommandMap:   make(map[string]string),
 		commandToAddrsMap:   make(map[string][]string),
 		addrToClientMap:     make(map[string]tcpclient.Client),
 		addrToActiveTimeMap: make(map[string]time.Time),
 		addrToConnConfigMap: make(map[string]*pb.ConnectionConfig),
+		healthCheckInterval: time.Duration(healthCheckInterval) * time.Second,
 	}
+	go m.startServiceDoctor()
+	return m
 }
 
 func (m *serviceManager) getCommand(method, path string) (command string, exists bool) {
@@ -50,6 +56,19 @@ func (m *serviceManager) getServiceConn(command string) (service tcpclient.Clien
 	addr := addrs[rand.Intn(addrsLength)]
 	service, exists = m.addrToClientMap[addr]
 	return
+}
+
+func (m *serviceManager) startServiceDoctor() {
+	ctx := logger.GetContextWithLogID(context.Background(), "service_doctor")
+	for {
+		time.Sleep(m.healthCheckInterval)
+		for addr, client := range m.addrToClientMap {
+			_, err := serviceHealthCheck(ctx, client)
+			if err != nil {
+				m.abandonService(addr)
+			}
+		}
+	}
 }
 
 func serviceHealthCheck(ctx context.Context, client tcpclient.Client) (res *pb.HealthCheckResponse, err error) {
@@ -98,6 +117,8 @@ func verifyServiceAddresses(ctx context.Context, addrs []string) (addr string, e
 }
 
 func (m *serviceManager) registerService(ctx context.Context, wrappedReq *pb.Request) (wrappedRes *pb.Response, err error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	req := &pb.RegisterServiceRequest{}
 	res := &pb.RegisterServiceResponse{}
 	err = proto.Unmarshal(wrappedReq.Body, req)
@@ -173,6 +194,8 @@ func getMethodString(method pb.Constant_HttpMethod) string {
 }
 
 func (m *serviceManager) abandonService(addr string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	for command, addrs := range m.commandToAddrsMap {
 		exists := false
 		idx := 0

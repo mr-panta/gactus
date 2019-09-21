@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -19,17 +20,19 @@ type handler struct {
 	commandProcessorMap map[string]*Processor
 	commandToAddrsMap   map[string][]string
 	addrToClientMap     map[string]tcpclient.Client
-	addrToConnConfigMap map[string]*pb.ConnectionConfig
 	tcpAddr             string
 	minConns            int
 	maxConns            int
 	idleConnTimeout     time.Duration
 	waitConnTimeout     time.Duration
 	clearPeriod         time.Duration
+	lock                sync.Mutex
 }
 
 // SetProcess [TOWRITE]
 func (h *handler) SetProcessor(command string, processor *Processor) {
+	h.lock.Lock()
+	defer h.lock.Unlock()
 	h.commandProcessorMap[command] = processor
 }
 
@@ -119,6 +122,8 @@ func (h *handler) processReservedCommands(ctx context.Context, wrappedReq *pb.Re
 func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) (
 	wrappedRes *pb.Response, err error) {
 
+	h.lock.Lock()
+	defer h.lock.Unlock()
 	logger.Debugf(ctx, "start updating registries")
 	req := &pb.UpdateRegistriesRequest{}
 	res := &pb.UpdateRegistriesResponse{}
@@ -155,7 +160,6 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 		h.commandToAddrsMap[pair.Command] = append(h.commandToAddrsMap[pair.Command], pair.Address)
 	}
 	wrappedRes = &pb.Response{Code: uint32(pb.Constant_RESPONSE_OK)}
-	println("C")
 	wrappedRes.Body, err = proto.Marshal(res)
 	if err != nil {
 		return nil, err
