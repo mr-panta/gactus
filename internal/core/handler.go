@@ -154,10 +154,10 @@ func (h handler) ServeTCP(conn net.Conn) {
 
 			// Find core server command
 			switch wrappedReq.Command {
-			case config.CMDCoreRegisterProcessors:
-				wrappedRes, err = h.serviceManager.registerProcessors(reqCtx, wrappedReq)
+			case config.CMDCoreRegisterService:
+				wrappedRes, err = h.serviceManager.registerService(reqCtx, wrappedReq)
 				if err != nil {
-					logger.Errorf(ctx, "cannot register processors: error[%v]", err)
+					logger.Errorf(ctx, "cannot register service: error[%v]", err)
 				}
 				bcErr := h.serviceManager.broadcastProcessorRegistries(reqCtx)
 				if bcErr != nil {

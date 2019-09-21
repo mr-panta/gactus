@@ -2,7 +2,7 @@ package config
 
 // Core server commands
 const (
-	CMDCoreRegisterProcessors = "__core__.register_processors"
+	CMDCoreRegisterService = "__core__.register_service"
 )
 
 // Service server commands

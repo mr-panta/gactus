@@ -37,7 +37,7 @@ func main() {
 	// Start service
 	service.Start()
 	// Register processors
-	err = service.RegisterProcessors(getProcessorList())
+	err = service.RegisterService(getProcessorList())
 	if err != nil {
 		logger.Fatalf(ctx, err.Error())
 	}

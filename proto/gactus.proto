@@ -46,6 +46,14 @@ message HttpConfig {
     string              path   = 2;
 }
 
+message ConnectionConfig {
+    uint32 min_conns         = 1;
+    uint32 max_conns         = 2;
+    uint32 idle_conn_timeout = 3;
+    uint32 wait_conn_timeout = 4;
+    uint32 clear_period      = 5;
+}
+
 message ProcessorRegistry {
     string     command     = 1;
     HttpConfig http_config = 2;
@@ -56,17 +64,25 @@ message CommandAddressPair {
     string address = 2;
 }
 
-message RegisterProcessorsRequest {
-    repeated string            addresses            = 1;
-    repeated ProcessorRegistry processor_registries = 2;
+message AddressConfig {
+    string           address     = 1;
+    ConnectionConfig conn_config = 2;
 }
 
-message RegisterProcessorsResponse {
-    string debug_message = 1;
+message RegisterServiceRequest {
+    repeated         string            addresses            = 1;
+    repeated         ProcessorRegistry processor_registries = 2;
+    ConnectionConfig conn_config                            = 3;
+}
+
+message RegisterServiceResponse {
+    string address       = 1;
+    string debug_message = 2;
 }
 
 message UpdateRegistriesRequest {
-    repeated CommandAddressPair pairs = 1;
+    repeated CommandAddressPair command_address_pairs = 1;
+    repeated AddressConfig      addr_configs          = 2;
 }
 
 message UpdateRegistriesResponse {

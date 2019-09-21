@@ -17,7 +17,7 @@ type Core interface {
 type Service interface {
 	Start()
 	Wait()
-	RegisterProcessors(processors []*Processor) (err error)
+	RegisterService(processors []*Processor) (err error)
 	SendRequest(ctx context.Context, command string, req, res proto.Message) (code uint32)
 }
 

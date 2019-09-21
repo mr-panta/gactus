@@ -22,6 +22,7 @@ type serviceManager struct {
 	commandToAddrsMap   map[string][]string
 	addrToClientMap     map[string]tcpclient.Client
 	addrToActiveTimeMap map[string]time.Time
+	addrToConnConfigMap map[string]*pb.ConnectionConfig
 }
 
 func newServiceManager() *serviceManager {
@@ -30,6 +31,7 @@ func newServiceManager() *serviceManager {
 		commandToAddrsMap:   make(map[string][]string),
 		addrToClientMap:     make(map[string]tcpclient.Client),
 		addrToActiveTimeMap: make(map[string]time.Time),
+		addrToConnConfigMap: make(map[string]*pb.ConnectionConfig),
 	}
 }
 
@@ -95,9 +97,9 @@ func verifyServiceAddresses(ctx context.Context, addrs []string) (addr string, e
 	return "", errors.New("cannot verify service addresses")
 }
 
-func (m *serviceManager) registerProcessors(ctx context.Context, wrappedReq *pb.Request) (wrappedRes *pb.Response, err error) {
-	req := &pb.RegisterProcessorsRequest{}
-	res := &pb.RegisterProcessorsResponse{}
+func (m *serviceManager) registerService(ctx context.Context, wrappedReq *pb.Request) (wrappedRes *pb.Response, err error) {
+	req := &pb.RegisterServiceRequest{}
+	res := &pb.RegisterServiceResponse{}
 	err = proto.Unmarshal(wrappedReq.Body, req)
 	if err != nil {
 		return nil, err
@@ -107,6 +109,25 @@ func (m *serviceManager) registerProcessors(ctx context.Context, wrappedReq *pb.
 	if err != nil {
 		return nil, err
 	}
+	// Setup connection to service
+	m.addrToConnConfigMap[serviceAddr] = req.ConnConfig
+	client, exists := m.addrToClientMap[serviceAddr]
+	if exists {
+		client.Close()
+	}
+	client, err = tcpclient.NewClient(
+		serviceAddr,
+		int(req.ConnConfig.MinConns),
+		int(req.ConnConfig.MaxConns),
+		time.Duration(req.ConnConfig.IdleConnTimeout)*time.Millisecond,
+		time.Duration(req.ConnConfig.WaitConnTimeout)*time.Millisecond,
+		time.Duration(req.ConnConfig.ClearPeriod)*time.Millisecond,
+	)
+	if err != nil {
+		return nil, err
+	}
+	m.addrToClientMap[serviceAddr] = client
+	m.addrToActiveTimeMap[serviceAddr] = time.Now()
 	// Update processors registries
 	for _, registry := range req.ProcessorRegistries {
 		if registry.HttpConfig != nil {
@@ -126,15 +147,8 @@ func (m *serviceManager) registerProcessors(ctx context.Context, wrappedReq *pb.
 		if isNewAddr {
 			m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], serviceAddr)
 		}
-		if _, exists := m.addrToClientMap[serviceAddr]; !exists {
-			client, err := tcpclient.NewClient(serviceAddr, 1, 1, 100, 10, 1000) // TODO: use client config from variables
-			if err != nil {
-				return nil, err
-			}
-			m.addrToClientMap[serviceAddr] = client
-		}
-		m.addrToActiveTimeMap[serviceAddr] = time.Now()
 	}
+	res.Address = serviceAddr
 	wrappedRes = &pb.Response{}
 	wrappedRes.Body, err = proto.Marshal(res)
 	wrappedRes.Code = uint32(pb.Constant_RESPONSE_OK)
@@ -247,11 +261,17 @@ func (m *serviceManager) broadcastProcessorRegistries(ctx context.Context) (err 
 	req := &pb.UpdateRegistriesRequest{}
 	for command, addrs := range m.commandToAddrsMap {
 		for _, addr := range addrs {
-			req.Pairs = append(req.Pairs, &pb.CommandAddressPair{
+			req.CommandAddressPairs = append(req.CommandAddressPairs, &pb.CommandAddressPair{
 				Command: command,
 				Address: addr,
 			})
 		}
+	}
+	for addr, connConfig := range m.addrToConnConfigMap {
+		req.AddrConfigs = append(req.AddrConfigs, &pb.AddressConfig{
+			Address:    addr,
+			ConnConfig: connConfig,
+		})
 	}
 	data, err := wrapAndMarshalRequest(ctx, config.CMDServiceUpdateRegistries, req)
 	if err != nil {

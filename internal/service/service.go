@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-tcpclient"
 )
 
@@ -21,6 +22,7 @@ type Handler interface {
 	SendCoreRequest(logID, command string, req, res proto.Message) (code uint32, err error)
 	ServeTCP(conn net.Conn)
 	SetProcessor(command string, processor *Processor)
+	SetTCPAddr(addr string)
 }
 
 // NewHandler [TOWRITE]
@@ -40,7 +42,8 @@ func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTi
 		coreClient:          coreClient,
 		commandProcessorMap: make(map[string]*Processor),
 		commandToAddrsMap:   make(map[string][]string),
-		addrToClient:        make(map[string]tcpclient.Client),
+		addrToClientMap:     make(map[string]tcpclient.Client),
+		addrToConnConfigMap: make(map[string]*pb.ConnectionConfig),
 		minConns:            minConns,
 		maxConns:            maxConns,
 		idleConnTimeout:     time.Duration(idleConnTimeout) * time.Millisecond,

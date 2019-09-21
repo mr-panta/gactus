@@ -18,10 +18,15 @@ import (
 )
 
 type gactusService struct {
-	name     string
-	coreAddr string
-	tcpPort  int
-	handler  service.Handler
+	name            string
+	coreAddr        string
+	tcpPort         int
+	handler         service.Handler
+	minConns        int
+	maxConns        int
+	idleConnTimeout int
+	waitConnTimeout int
+	clearPeriod     int
 }
 
 // NewService [TOWRITE]
@@ -33,10 +38,15 @@ func NewService(name, coreAddr string, tcpPort, minConns, maxConns, idleConnTime
 		return nil, err
 	}
 	return &gactusService{
-		name:     name,
-		coreAddr: coreAddr,
-		tcpPort:  tcpPort,
-		handler:  handler,
+		name:            name,
+		coreAddr:        coreAddr,
+		tcpPort:         tcpPort,
+		handler:         handler,
+		minConns:        minConns,
+		maxConns:        maxConns,
+		idleConnTimeout: idleConnTimeout,
+		waitConnTimeout: waitConnTimeout,
+		clearPeriod:     clearPeriod,
 	}, nil
 }
 
@@ -66,10 +76,10 @@ func (c *gactusService) Wait() {
 	os.Exit(0)
 }
 
-// RegisterProcessors [TOWRITE]
-func (c *gactusService) RegisterProcessors(processors []*Processor) error {
+// RegisterService [TOWRITE]
+func (c *gactusService) RegisterService(processors []*Processor) error {
 	ctx := logger.GetContextWithLogID(context.Background(), c.name)
-	logger.Debugf(ctx, "start registering processors")
+	logger.Debugf(ctx, "start registering service")
 	addrs, err := util.GetIPAddrs()
 	if err != nil {
 		return err
@@ -77,9 +87,16 @@ func (c *gactusService) RegisterProcessors(processors []*Processor) error {
 	for i := range addrs {
 		addrs[i] = fmt.Sprintf("%s:%d", addrs[i], c.tcpPort)
 	}
-	req := &pb.RegisterProcessorsRequest{
+	req := &pb.RegisterServiceRequest{
 		Addresses:           addrs,
 		ProcessorRegistries: make([]*pb.ProcessorRegistry, len(processors)),
+		ConnConfig: &pb.ConnectionConfig{
+			MinConns:        uint32(c.minConns),
+			MaxConns:        uint32(c.maxConns),
+			IdleConnTimeout: uint32(c.idleConnTimeout),
+			WaitConnTimeout: uint32(c.waitConnTimeout),
+			ClearPeriod:     uint32(c.clearPeriod),
+		},
 	}
 	for i, processor := range processors {
 		req.ProcessorRegistries[i] = &pb.ProcessorRegistry{
@@ -92,11 +109,12 @@ func (c *gactusService) RegisterProcessors(processors []*Processor) error {
 			Process: processor.Process,
 		})
 	}
-	res := &pb.RegisterProcessorsResponse{}
-	code := c.SendRequest(ctx, config.CMDCoreRegisterProcessors, req, res)
+	res := &pb.RegisterServiceResponse{}
+	code := c.SendRequest(ctx, config.CMDCoreRegisterService, req, res)
 	if code != uint32(pb.Constant_RESPONSE_OK) {
 		return errors.New(res.GetDebugMessage())
 	}
+	c.handler.SetTCPAddr(res.Address)
 	return nil
 }
 

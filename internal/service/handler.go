@@ -18,7 +18,9 @@ type handler struct {
 	coreClient          tcpclient.Client
 	commandProcessorMap map[string]*Processor
 	commandToAddrsMap   map[string][]string
-	addrToClient        map[string]tcpclient.Client
+	addrToClientMap     map[string]tcpclient.Client
+	addrToConnConfigMap map[string]*pb.ConnectionConfig
+	tcpAddr             string
 	minConns            int
 	maxConns            int
 	idleConnTimeout     time.Duration
@@ -94,6 +96,12 @@ func (h *handler) ServeTCP(conn net.Conn) {
 	}
 }
 
+// SetTCPAddr is used to set service tcp address
+// that is selected by core server.
+func (h *handler) SetTCPAddr(addr string) {
+	h.tcpAddr = addr
+}
+
 func (h *handler) processReservedCommands(ctx context.Context, wrappedReq *pb.Request) (
 	wrappedRes *pb.Response, err error) {
 
@@ -118,41 +126,36 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 	if err != nil {
 		return nil, err
 	}
-	newAddrMap := make(map[string]bool)
-	oldAddrMap := make(map[string]bool)
 	h.commandToAddrsMap = make(map[string][]string)
-	for _, pair := range req.Pairs {
-		if _, exists := h.addrToClient[pair.Address]; !exists {
-			newAddrMap[pair.Address] = true
-		} else {
-			oldAddrMap[pair.Address] = true
-		}
-		h.commandToAddrsMap[pair.Command] = append(h.commandToAddrsMap[pair.Command], pair.Address)
+	for addr := range h.addrToClientMap {
+		client := h.addrToClientMap[addr]
+		delete(h.addrToClientMap, addr)
+		client.Close()
 	}
-	for addr, client := range h.addrToClient {
-		if exists := oldAddrMap[addr]; !exists {
-			// unused address
-			delete(h.addrToClient, addr)
-			client.Close()
+	for _, addrConf := range req.AddrConfigs {
+		if addrConf.Address == h.tcpAddr {
+			continue
 		}
-	}
-	wrappedRes = &pb.Response{Code: uint32(pb.Constant_RESPONSE_OK)}
-	for addr := range newAddrMap {
 		client, err := tcpclient.NewClient(
-			addr,
-			h.minConns,
-			h.maxConns,
-			h.idleConnTimeout,
-			h.waitConnTimeout,
-			h.clearPeriod,
+			addrConf.Address,
+			int(addrConf.ConnConfig.MinConns),
+			int(addrConf.ConnConfig.MaxConns),
+			time.Duration(addrConf.ConnConfig.IdleConnTimeout)*time.Microsecond,
+			time.Duration(addrConf.ConnConfig.WaitConnTimeout)*time.Microsecond,
+			time.Duration(addrConf.ConnConfig.ClearPeriod)*time.Microsecond,
 		)
 		if err != nil {
 			wrappedRes.Code = uint32(pb.Constant_RESPONSE_CREATE_CLIENT_FAILED)
-			res.DebugMessage += fmt.Sprintf("[cannot tcp connection to service[%s]: %v]", addr, err)
+			res.DebugMessage += fmt.Sprintf("[cannot tcp connection to service[%s]: %v]", addrConf.Address, err)
 		} else {
-			h.addrToClient[addr] = client
+			h.addrToClientMap[addrConf.Address] = client
 		}
 	}
+	for _, pair := range req.CommandAddressPairs {
+		h.commandToAddrsMap[pair.Command] = append(h.commandToAddrsMap[pair.Command], pair.Address)
+	}
+	wrappedRes = &pb.Response{Code: uint32(pb.Constant_RESPONSE_OK)}
+	println("C")
 	wrappedRes.Body, err = proto.Marshal(res)
 	if err != nil {
 		return nil, err
@@ -176,7 +179,6 @@ func (h *handler) healthCheck(ctx context.Context, wrappedReq *pb.Request) (
 	if err != nil {
 		return nil, err
 	}
-	logger.Debugf(ctx, "successfully update registries")
 	return wrappedRes, nil
 }
 
