@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"sync"
 	"time"
@@ -36,30 +38,58 @@ func (h *handler) SetProcessor(command string, processor *Processor) {
 	h.commandProcessorMap[command] = processor
 }
 
-// SendCoreRequest is used to send request in bytes form to core server
-func (h *handler) SendCoreRequest(logID, command string, req, res proto.Message) (code uint32, err error) {
+func (h *handler) setupCoreData() {
+	h.commandToAddrsMap[config.CMDCoreRegisterService] = append(
+		h.commandToAddrsMap[config.CMDCoreRegisterService],
+		h.coreClient.GetHostAddr(),
+	)
+	h.addrToClientMap[h.coreClient.GetHostAddr()] = h.coreClient
+}
+
+func (h *handler) getServiceConn(command string) (service tcpclient.Client, exists bool) {
+	addrs := h.commandToAddrsMap[command]
+	addrsLength := len(addrs)
+	if addrsLength == 0 {
+		return nil, false
+	}
+	addr := addrs[rand.Intn(addrsLength)]
+	service, exists = h.addrToClientMap[addr]
+	return
+}
+
+// SendRequest is used to send request in bytes form to core server
+func (h *handler) SendRequest(logID, command string, req, res proto.Message) (code uint32, err error) {
 	body, err := proto.Marshal(req)
 	if err != nil {
 		return uint32(pb.Constant_RESPONSE_ERROR_SETUP_REQUEST), err
 	}
-	reqData, err := proto.Marshal(&pb.Request{
+	wrappedReq, err := proto.Marshal(&pb.Request{
 		LogId:   logID,
 		Command: command,
 		IsProto: true,
 		Body:    body,
 	})
+	wrappedRes := &pb.Response{}
 	if err != nil {
 		return uint32(pb.Constant_RESPONSE_ERROR_SETUP_REQUEST), err
 	}
-	data, err := h.coreClient.Send(reqData)
+	serviceClient, exists := h.getServiceConn(command)
+	if !exists {
+		return uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND), errors.New("command not found")
+	}
+	data, err := serviceClient.Send(wrappedReq)
 	if err != nil {
 		return uint32(pb.Constant_RESPONSE_ERROR_SETUP_REQUEST), err
 	}
-	err = proto.Unmarshal(data, res)
+	err = proto.Unmarshal(data, wrappedRes)
 	if err != nil {
 		return uint32(pb.Constant_RESPONSE_ERROR_SETUP_REQUEST), err
 	}
-	return uint32(pb.Constant_RESPONSE_OK), nil
+	err = proto.Unmarshal(wrappedRes.Body, res)
+	if err != nil {
+		return uint32(pb.Constant_RESPONSE_ERROR_SETUP_REQUEST), err
+	}
+	return uint32(wrappedRes.Code), nil
 }
 
 // ServeTCP is used to implement tcp.Handler
@@ -132,7 +162,12 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 		return nil, err
 	}
 	h.commandToAddrsMap = make(map[string][]string)
+	h.setupCoreData()
 	for addr := range h.addrToClientMap {
+		if addr == h.coreClient.GetHostAddr() {
+			// Skip core server address
+			continue
+		}
 		client := h.addrToClientMap[addr]
 		delete(h.addrToClientMap, addr)
 		client.Close()
@@ -157,6 +192,9 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 		}
 	}
 	for _, pair := range req.CommandAddressPairs {
+		if pair.Address == h.tcpAddr {
+			continue
+		}
 		h.commandToAddrsMap[pair.Command] = append(h.commandToAddrsMap[pair.Command], pair.Address)
 	}
 	wrappedRes = &pb.Response{Code: uint32(pb.Constant_RESPONSE_OK)}

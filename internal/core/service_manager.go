@@ -22,7 +22,6 @@ type serviceManager struct {
 	routeToCommandMap   map[string]string
 	commandToAddrsMap   map[string][]string
 	addrToClientMap     map[string]tcpclient.Client
-	addrToActiveTimeMap map[string]time.Time
 	addrToConnConfigMap map[string]*pb.ConnectionConfig
 	healthCheckInterval time.Duration
 	lock                sync.Mutex
@@ -33,7 +32,6 @@ func newServiceManager(healthCheckInterval int) *serviceManager {
 		routeToCommandMap:   make(map[string]string),
 		commandToAddrsMap:   make(map[string][]string),
 		addrToClientMap:     make(map[string]tcpclient.Client),
-		addrToActiveTimeMap: make(map[string]time.Time),
 		addrToConnConfigMap: make(map[string]*pb.ConnectionConfig),
 		healthCheckInterval: time.Duration(healthCheckInterval) * time.Second,
 	}
@@ -148,7 +146,6 @@ func (m *serviceManager) registerService(ctx context.Context, wrappedReq *pb.Req
 		return nil, err
 	}
 	m.addrToClientMap[serviceAddr] = client
-	m.addrToActiveTimeMap[serviceAddr] = time.Now()
 	// Update processors registries
 	for _, registry := range req.ProcessorRegistries {
 		if registry.HttpConfig != nil {
@@ -225,9 +222,6 @@ func (m *serviceManager) abandonService(addr string) {
 	if client, exists := m.addrToClientMap[addr]; exists {
 		client.Close()
 		delete(m.addrToClientMap, addr)
-	}
-	if _, exists := m.addrToActiveTimeMap[addr]; exists {
-		delete(m.addrToActiveTimeMap, addr)
 	}
 }
 

@@ -18,7 +18,7 @@ type Processor struct {
 
 // Handler [TOWRITE]
 type Handler interface {
-	SendCoreRequest(logID, command string, req, res proto.Message) (code uint32, err error)
+	SendRequest(logID, command string, req, res proto.Message) (code uint32, err error)
 	ServeTCP(conn net.Conn)
 	SetProcessor(command string, processor *Processor)
 	SetTCPAddr(addr string)
@@ -37,7 +37,7 @@ func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTi
 	if err != nil {
 		return nil, err
 	}
-	return &handler{
+	h := &handler{
 		coreClient:          coreClient,
 		commandProcessorMap: make(map[string]*Processor),
 		commandToAddrsMap:   make(map[string][]string),
@@ -47,7 +47,9 @@ func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTi
 		idleConnTimeout:     time.Duration(idleConnTimeout) * time.Millisecond,
 		waitConnTimeout:     time.Duration(waitConnTimeout) * time.Millisecond,
 		clearPeriod:         time.Duration(clearPeriod) * time.Millisecond,
-	}, nil
+	}
+	h.setupCoreData()
+	return h, nil
 }
 
 // ListenAndServe is used to listen to TCP connection.

@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/logger v1.0.1 // indirect
-	github.com/mr-panta/go-logger v0.3.1
-	github.com/mr-panta/go-tcpclient v0.5.0
-	golang.org/x/sys v0.0.0-20190920190810-ef0ce1748380 // indirect
+	github.com/mr-panta/go-logger v0.3.2
+	github.com/mr-panta/go-tcpclient v0.5.1
+	golang.org/x/sys v0.0.0-20190921190940-14da1ac737cc // indirect
 )

@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/mr-panta/gactus/internal/config"
@@ -95,7 +94,6 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		body = []byte(fmt.Sprintf("%d %s", statusCode, config.ErrorServiceNotAvailable))
 		return
 	}
-	h.serviceManager.addrToActiveTimeMap[serviceClient.GetHostAddr()] = time.Now()
 
 	// Unwrap response
 	wrappedRes := &pb.Response{}

@@ -121,7 +121,10 @@ func (c *gactusService) RegisterService(processors []*Processor) error {
 // SendRequest [TOWRITE]
 func (c *gactusService) SendRequest(ctx context.Context, command string, req, res proto.Message) (code uint32) {
 	var err error
-	code, err = c.handler.SendCoreRequest(logger.GetLogID(ctx), command, req, res)
+	if logger.GetLogID(ctx) == "" {
+		ctx = logger.GetContextWithLogID(ctx, command)
+	}
+	code, err = c.handler.SendRequest(logger.GetLogID(ctx), command, req, res)
 	if err != nil {
 		logger.Errorf(ctx, err.Error())
 	}
