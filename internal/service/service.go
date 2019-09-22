@@ -21,7 +21,6 @@ type Handler interface {
 	SendRequest(logID, command string, req, res proto.Message) (code uint32, err error)
 	ServeTCP(conn net.Conn)
 	SetProcessor(command string, processor *Processor)
-	SetTCPAddr(addr string)
 }
 
 // NewHandler [TOWRITE]

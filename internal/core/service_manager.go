@@ -35,7 +35,7 @@ func newServiceManager(healthCheckInterval int) *serviceManager {
 		addrToConnConfigMap: make(map[string]*pb.ConnectionConfig),
 		healthCheckInterval: time.Duration(healthCheckInterval) * time.Second,
 	}
-	go m.startServiceDoctor()
+	go m.startServiceDoctor(true)
 	return m
 }
 
@@ -56,21 +56,29 @@ func (m *serviceManager) getServiceConn(command string) (service tcpclient.Clien
 	return
 }
 
-func (m *serviceManager) startServiceDoctor() {
+func (m *serviceManager) startServiceDoctor(loop bool) {
 	ctx := logger.GetContextWithLogID(context.Background(), "service_doctor")
 	for {
-		time.Sleep(m.healthCheckInterval)
+		if loop {
+			time.Sleep(m.healthCheckInterval)
+		}
 		for addr, client := range m.addrToClientMap {
 			_, err := serviceHealthCheck(ctx, client)
+			logger.Errorf(ctx, "%s %v", addr, err)
 			if err != nil {
 				m.abandonService(addr)
 			}
+		}
+		if !loop {
+			return
 		}
 	}
 }
 
 func serviceHealthCheck(ctx context.Context, client tcpclient.Client) (res *pb.HealthCheckResponse, err error) {
-	req := &pb.HealthCheckRequest{}
+	req := &pb.HealthCheckRequest{
+		Address: client.GetHostAddr(),
+	}
 	res = &pb.HealthCheckResponse{}
 	body, err := proto.Marshal(req)
 	if err != nil {
@@ -193,6 +201,8 @@ func getMethodString(method pb.Constant_HttpMethod) string {
 func (m *serviceManager) abandonService(addr string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	ctx := logger.GetContextWithLogID(context.Background(), "abandon_service")
+	logger.Debugf(ctx, "abandon service[%s]", addr)
 	for command, addrs := range m.commandToAddrsMap {
 		exists := false
 		idx := 0

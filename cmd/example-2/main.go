@@ -66,9 +66,7 @@ func getProcessorList(service gactus.Service) []*gactus.Processor {
 					}
 					calRes := &pb.CalculateResponse{}
 					code := service.SendRequest(context.Background(), "calculator.add", calReq, calRes)
-					logger.Debugf(context.Background(), "%d", code)
-					logger.Debugf(context.Background(), "%v", calReq)
-					logger.Debugf(context.Background(), "%v", calRes)
+					logger.Debugf(context.Background(), "code: %d", code)
 					response.C = calRes.C
 				}
 				return uint32(gtpb.Constant_RESPONSE_OK)

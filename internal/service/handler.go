@@ -129,12 +129,6 @@ func (h *handler) ServeTCP(conn net.Conn) {
 	}
 }
 
-// SetTCPAddr is used to set service tcp address
-// that is selected by core server.
-func (h *handler) SetTCPAddr(addr string) {
-	h.tcpAddr = addr
-}
-
 func (h *handler) processReservedCommands(ctx context.Context, wrappedReq *pb.Request) (
 	wrappedRes *pb.Response, err error) {
 
@@ -155,6 +149,7 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 	h.lock.Lock()
 	defer h.lock.Unlock()
 	logger.Debugf(ctx, "start updating registries")
+	wrappedRes = &pb.Response{}
 	req := &pb.UpdateRegistriesRequest{}
 	res := &pb.UpdateRegistriesResponse{}
 	err = proto.Unmarshal(wrappedReq.Body, req)
@@ -197,7 +192,7 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 		}
 		h.commandToAddrsMap[pair.Command] = append(h.commandToAddrsMap[pair.Command], pair.Address)
 	}
-	wrappedRes = &pb.Response{Code: uint32(pb.Constant_RESPONSE_OK)}
+	wrappedRes.Code = uint32(pb.Constant_RESPONSE_OK)
 	wrappedRes.Body, err = proto.Marshal(res)
 	if err != nil {
 		return nil, err
@@ -209,7 +204,6 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 func (h *handler) healthCheck(ctx context.Context, wrappedReq *pb.Request) (
 	wrappedRes *pb.Response, err error) {
 
-	logger.Debugf(ctx, "start health checking")
 	wrappedRes = &pb.Response{}
 	req := &pb.HealthCheckRequest{}
 	res := &pb.HealthCheckResponse{}
@@ -217,6 +211,8 @@ func (h *handler) healthCheck(ctx context.Context, wrappedReq *pb.Request) (
 	if err != nil {
 		return nil, err
 	}
+	logger.Debugf(ctx, "assign tcp address[%s]", req.Address)
+	h.tcpAddr = req.Address
 	wrappedRes.Body, err = proto.Marshal(res)
 	if err != nil {
 		return nil, err

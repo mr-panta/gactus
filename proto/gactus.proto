@@ -29,11 +29,12 @@ message Constant {
 }
 
 message Request {
-    string               log_id       = 1;
-    string               command      = 2;
-    bool                 is_proto     = 3;
-    bytes                body         = 4;
-    Constant.ContentType content_type = 5;
+    string               http_address = 1;
+    string               log_id       = 2;
+    string               command      = 3;
+    bool                 is_proto     = 4;
+    bytes                body         = 5;
+    Constant.ContentType content_type = 6;
 }
 
 message Response {
@@ -90,6 +91,7 @@ message UpdateRegistriesResponse {
 }
 
 message HealthCheckRequest {
+    string address = 1;
 }
 
 message HealthCheckResponse {

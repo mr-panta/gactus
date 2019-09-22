@@ -1,8 +1,10 @@
 package util
 
-import "net"
+import (
+	"net"
+)
 
-// GetIPAddrs is used to get ip version 4 addressses
+// GetIPAddrs is used to get ip version 4 addressses.
 func GetIPAddrs() (ipAddrs []string, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {

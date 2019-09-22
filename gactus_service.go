@@ -114,7 +114,6 @@ func (c *gactusService) RegisterService(processors []*Processor) error {
 	if code != uint32(pb.Constant_RESPONSE_OK) {
 		return errors.New(res.GetDebugMessage())
 	}
-	c.handler.SetTCPAddr(res.Address)
 	return nil
 }
 

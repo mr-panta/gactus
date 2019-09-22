@@ -68,8 +68,12 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Get sender address
+	httpAddr := strings.Split(req.RemoteAddr, ":")[0]
+
 	// Setup gactus request
 	wrappedReq := &pb.Request{
+		HttpAddress: httpAddr,
 		Command:     command,
 		LogId:       logID,
 		ContentType: contentType,
@@ -153,6 +157,9 @@ func (h handler) ServeTCP(conn net.Conn) {
 			// Find core server command
 			switch wrappedReq.Command {
 			case config.CMDCoreRegisterService:
+				// Clean service registries
+				h.serviceManager.startServiceDoctor(false)
+				// Register service
 				wrappedRes, err = h.serviceManager.registerService(reqCtx, wrappedReq)
 				if err != nil {
 					logger.Errorf(ctx, "cannot register service: error[%v]", err)
