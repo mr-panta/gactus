@@ -34,6 +34,8 @@ github.com/mr-panta/go-tcpclient v0.5.2 h1:I9CPvVdRAr5ofH1LkviwZmUblZzraN1+wodyU
 github.com/mr-panta/go-tcpclient v0.5.2/go.mod h1:OZeSqYcejEel3Pg+FHOvJjRRFm6Qn+wN4dElsLjF9/A=
 github.com/mr-panta/go-tcpclient v0.5.3 h1:Vb1lM4LQwiKGHPeqxlvKX27NJyiVVEvhUBrwjc9Jio4=
 github.com/mr-panta/go-tcpclient v0.5.3/go.mod h1:OZeSqYcejEel3Pg+FHOvJjRRFm6Qn+wN4dElsLjF9/A=
+github.com/mr-panta/go-tcpclient v0.5.4 h1:ZxhvxUYJAFeA45PaPudNaLQDuZemE6Wox/LCabmkqew=
+github.com/mr-panta/go-tcpclient v0.5.4/go.mod h1:OZeSqYcejEel3Pg+FHOvJjRRFm6Qn+wN4dElsLjF9/A=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190916202348-b4ddaad3f8a3/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190919044723-0c1ff786ef13/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
