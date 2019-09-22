@@ -64,7 +64,6 @@ func (m *serviceManager) startServiceDoctor(loop bool) {
 		}
 		for addr, client := range m.addrToClientMap {
 			_, err := serviceHealthCheck(ctx, client)
-			logger.Errorf(ctx, "%s %v", addr, err)
 			if err != nil {
 				m.abandonService(addr)
 			}

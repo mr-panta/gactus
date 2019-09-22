@@ -211,8 +211,10 @@ func (h *handler) healthCheck(ctx context.Context, wrappedReq *pb.Request) (
 	if err != nil {
 		return nil, err
 	}
-	logger.Debugf(ctx, "assign tcp address[%s]", req.Address)
-	h.tcpAddr = req.Address
+	if h.tcpAddr == "" {
+		logger.Debugf(ctx, "assign tcp address[%s]", req.Address)
+		h.tcpAddr = req.Address
+	}
 	wrappedRes.Body, err = proto.Marshal(res)
 	if err != nil {
 		return nil, err
