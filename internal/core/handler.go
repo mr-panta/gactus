@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -10,16 +9,11 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	bd "github.com/mr-panta/gactus/internal/body"
 	"github.com/mr-panta/gactus/internal/config"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
 	"github.com/mr-panta/go-tcpclient"
-)
-
-const (
-	contentTypeJSON               = "application/json"
-	contentTypeFormData           = "multipart/form-data"
-	contentTypeXWWWFormURLencoded = "application/x-www-form-urlencoded"
 )
 
 // Handler [TOWRITE]
@@ -35,14 +29,14 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	defer func() {
 		// Send response back
 		if statusCode == http.StatusOK {
-			res.Header().Set("Content-Type", contentTypeJSON)
+			res.Header().Set("Content-Type", "application/json")
 		}
 		res.WriteHeader(statusCode)
 		_, _ = res.Write(body)
 	}()
 	ctx := context.Background()
 	ctx, logID := generateLogID(ctx, req.Method, req.URL.Path)
-	contentType, err := convertContentType(req.Header)
+	contentType, rawContentType, err := bd.GetContentTypeValue(req.Header)
 	if err != nil {
 		logger.Errorf(ctx, "cannot convert content-type, err=%v", err)
 		statusCode = http.StatusInternalServerError
@@ -73,12 +67,13 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	// Setup gactus request
 	wrappedReq := &pb.Request{
-		HttpAddress: httpAddr,
-		Command:     command,
-		LogId:       logID,
-		ContentType: contentType,
-		Body:        body,
-		IsProto:     false,
+		HttpAddress:    httpAddr,
+		Command:        command,
+		LogId:          logID,
+		ContentType:    contentType,
+		RawContentType: rawContentType,
+		Body:           body,
+		IsProto:        false,
 	}
 	data, _ := proto.Marshal(wrappedReq)
 
@@ -118,25 +113,6 @@ func generateLogID(ctx context.Context, method, path string) (coveredCTX context
 	}
 	coveredCTX = logger.GetContextWithLogID(ctx, fmt.Sprintf("%s_%s", method, path))
 	return coveredCTX, logger.GetLogID(coveredCTX)
-}
-
-func convertContentType(header http.Header) (contentType pb.Constant_ContentType, err error) {
-	cttType := header.Get("Content-Type")
-	cttTypes := strings.Split(cttType, ";")
-	if len(cttTypes) == 0 {
-		contentType = pb.Constant_CONTENT_TYPE_UNKNOWN
-		err = errors.New("content-type empty")
-	} else {
-		switch cttTypes[0] {
-		case contentTypeJSON:
-			contentType = pb.Constant_CONTENT_TYPE_JSON
-		case contentTypeFormData:
-			contentType = pb.Constant_CONTENT_TYPE_FORM_DATA
-		case contentTypeXWWWFormURLencoded:
-			contentType = pb.Constant_CONTENT_TYPE_X_WWW_FORM_URLENCODED
-		}
-	}
-	return
 }
 
 // ServeTCP is used to implement tcp.Handler
