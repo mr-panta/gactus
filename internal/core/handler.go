@@ -104,7 +104,7 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	_ = proto.Unmarshal(output, wrappedRes)
 	body = wrappedRes.Body
 	if wrappedRes.Code != uint32(pb.Constant_RESPONSE_OK) {
-		err = fmt.Errorf("internal error: %v", wrappedRes.DebugMessage)
+		err = fmt.Errorf(wrappedRes.DebugMessage)
 		statusCode = http.StatusInternalServerError
 		return
 	}
