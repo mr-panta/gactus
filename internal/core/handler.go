@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -10,16 +9,11 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	bd "github.com/mr-panta/gactus/internal/body"
 	"github.com/mr-panta/gactus/internal/config"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
 	"github.com/mr-panta/go-tcpclient"
-)
-
-const (
-	contentTypeJSON               = "application/json"
-	contentTypeFormData           = "multipart/form-data"
-	contentTypeXWWWFormURLencoded = "application/x-www-form-urlencoded"
 )
 
 // Handler [TOWRITE]
@@ -30,41 +24,49 @@ type handler struct {
 // ServeHTTP is used to implement http.Handler,
 // get HTTP request and send back HTTP response.
 func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	body := []byte{}
-	statusCode := http.StatusOK
-	defer func() {
-		// Send response back
-		if statusCode == http.StatusOK {
-			res.Header().Set("Content-Type", contentTypeJSON)
-		}
-		res.WriteHeader(statusCode)
-		_, _ = res.Write(body)
-	}()
 	ctx := context.Background()
 	ctx, logID := generateLogID(ctx, req.Method, req.URL.Path)
-	contentType, err := convertContentType(req.Header)
+
+	body := []byte{}
+	statusCode := http.StatusOK
+	wrappedRes := &pb.Response{}
+	var err error
+
+	defer func() {
+		// Send response back
+		res.Header().Set("Content-Type", "application/json")
+		res.WriteHeader(statusCode)
+		if err != nil {
+			logger.Errorf(ctx, err.Error())
+			body, _ = bd.Marshal(&pb.Response{
+				Code:         wrappedRes.Code,
+				DebugMessage: err.Error(),
+			})
+		}
+		_, _ = res.Write(body)
+	}()
+
+	// Get content type
+	contentType, rawContentType, err := bd.GetContentTypeValue(req.Header)
 	if err != nil {
-		logger.Errorf(ctx, "cannot convert content-type, err=%v", err)
+		err = fmt.Errorf("cannot convert content-type, err=%v", err)
 		statusCode = http.StatusInternalServerError
-		body = []byte(fmt.Sprintf("%d %s", statusCode, config.ErrorServiceNotAvailable))
 		return
 	}
 
 	// Get command from method and path
 	command, exists := h.serviceManager.getCommand(req.Method, req.URL.Path)
 	if !exists {
-		logger.Errorf(ctx, "%s:%s route not found", req.Method, req.URL.Path)
+		err = fmt.Errorf("%s:%s route not found", req.Method, req.URL.Path)
 		statusCode = http.StatusNotFound
-		body = []byte(fmt.Sprintf("%d %s", statusCode, config.ErrorNotFound))
 		return
 	}
 
 	// Get body
 	body, err = ioutil.ReadAll(req.Body)
 	if err != nil {
-		logger.Errorf(ctx, "cannot read body, err=%v", err)
+		err = fmt.Errorf("cannot read body, err=%v", err)
 		statusCode = http.StatusInternalServerError
-		body = []byte(fmt.Sprintf("%d %s", statusCode, config.ErrorServiceNotAvailable))
 		return
 	}
 
@@ -73,41 +75,37 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	// Setup gactus request
 	wrappedReq := &pb.Request{
-		HttpAddress: httpAddr,
-		Command:     command,
-		LogId:       logID,
-		ContentType: contentType,
-		Body:        body,
-		IsProto:     false,
+		HttpAddress:    httpAddr,
+		Command:        command,
+		LogId:          logID,
+		ContentType:    contentType,
+		RawContentType: rawContentType,
+		Body:           body,
+		IsProto:        false,
 	}
 	data, _ := proto.Marshal(wrappedReq)
 
 	// Send data to TCP
 	serviceClient, exists := h.serviceManager.getServiceConn(command)
 	if !exists {
-		logger.Errorf(ctx, "%s command not found", command)
+		err = fmt.Errorf("command not found, command=%v", command)
 		statusCode = http.StatusNotFound
-		body = []byte(fmt.Sprintf("%d %s", statusCode, config.ErrorNotFound))
 		return
 	}
 	output, err := serviceClient.Send(data)
 	if err != nil {
-		logger.Errorf(ctx, "cannot send data to service, err=%v", err)
+		err = fmt.Errorf("cannot send data to service, err=%v", err)
 		h.serviceManager.abandonService(serviceClient.GetHostAddr())
 		statusCode = http.StatusInternalServerError
-		body = []byte(fmt.Sprintf("%d %s", statusCode, config.ErrorServiceNotAvailable))
 		return
 	}
 
 	// Unwrap response
-	wrappedRes := &pb.Response{}
 	_ = proto.Unmarshal(output, wrappedRes)
 	body = wrappedRes.Body
 	if wrappedRes.Code != uint32(pb.Constant_RESPONSE_OK) {
-		errorMessage := fmt.Sprintf("internal error code: %d", wrappedRes.Code)
-		logger.Errorf(ctx, errorMessage)
+		err = fmt.Errorf("internal error: %v", wrappedRes.DebugMessage)
 		statusCode = http.StatusInternalServerError
-		body = []byte(errorMessage)
 		return
 	}
 }
@@ -118,25 +116,6 @@ func generateLogID(ctx context.Context, method, path string) (coveredCTX context
 	}
 	coveredCTX = logger.GetContextWithLogID(ctx, fmt.Sprintf("%s_%s", method, path))
 	return coveredCTX, logger.GetLogID(coveredCTX)
-}
-
-func convertContentType(header http.Header) (contentType pb.Constant_ContentType, err error) {
-	cttType := header.Get("Content-Type")
-	cttTypes := strings.Split(cttType, ";")
-	if len(cttTypes) == 0 {
-		contentType = pb.Constant_CONTENT_TYPE_UNKNOWN
-		err = errors.New("content-type empty")
-	} else {
-		switch cttTypes[0] {
-		case contentTypeJSON:
-			contentType = pb.Constant_CONTENT_TYPE_JSON
-		case contentTypeFormData:
-			contentType = pb.Constant_CONTENT_TYPE_FORM_DATA
-		case contentTypeXWWWFormURLencoded:
-			contentType = pb.Constant_CONTENT_TYPE_X_WWW_FORM_URLENCODED
-		}
-	}
-	return
 }
 
 // ServeTCP is used to implement tcp.Handler

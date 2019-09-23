@@ -29,17 +29,19 @@ message Constant {
 }
 
 message Request {
-    string               http_address = 1;
-    string               log_id       = 2;
-    string               command      = 3;
-    bool                 is_proto     = 4;
-    bytes                body         = 5;
-    Constant.ContentType content_type = 6;
+    string               http_address     = 1;
+    string               log_id           = 2;
+    string               command          = 3;
+    bool                 is_proto         = 4;
+    bytes                body             = 5;
+    Constant.ContentType content_type     = 6;
+    string               raw_content_type = 7;
 }
 
 message Response {
-    uint32 code = 1;
-    bytes  body = 2;
+    uint32 code          = 1;
+    bytes  body          = 2;
+    string debug_message = 3;
 }
 
 message HttpConfig {

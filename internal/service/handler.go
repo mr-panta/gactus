@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	bd "github.com/mr-panta/gactus/internal/body"
 	"github.com/mr-panta/gactus/internal/config"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
@@ -226,6 +226,12 @@ func (h *handler) handleRequest(ctx context.Context, wrappedReq *pb.Request) (
 	wrappedRes *pb.Response, err error) {
 
 	wrappedRes = &pb.Response{Code: uint32(pb.Constant_RESPONSE_OK)}
+	defer func() {
+		if err != nil {
+			wrappedRes.DebugMessage = err.Error()
+		}
+	}()
+
 	processor, exists := h.commandProcessorMap[wrappedReq.Command]
 	if !exists {
 		wrappedRes.Code = uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)
@@ -236,7 +242,7 @@ func (h *handler) handleRequest(ctx context.Context, wrappedReq *pb.Request) (
 	if wrappedReq.IsProto {
 		err = proto.Unmarshal(wrappedReq.Body, req)
 	} else {
-		err = json.Unmarshal(wrappedReq.Body, req)
+		err = bd.Unmarshal(wrappedReq, req)
 	}
 	if err != nil {
 		wrappedRes.Code = uint32(pb.Constant_RESPONSE_ERROR_UNPACK_REQUEST)
@@ -246,7 +252,7 @@ func (h *handler) handleRequest(ctx context.Context, wrappedReq *pb.Request) (
 	if wrappedReq.IsProto {
 		wrappedRes.Body, err = proto.Marshal(res)
 	} else {
-		wrappedRes.Body, err = json.Marshal(res)
+		wrappedRes.Body, err = bd.Marshal(res)
 	}
 	if err != nil {
 		wrappedRes.Code = uint32(pb.Constant_RESPONSE_ERROR_SETUP_RESPONSE)
