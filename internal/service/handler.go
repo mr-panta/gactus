@@ -100,14 +100,13 @@ func (h *handler) ServeTCP(conn net.Conn) {
 	for {
 		err := tcpclient.Reader(conn, func(input []byte) ([]byte, error) {
 			wrappedReq := &pb.Request{}
-			wrappedRes := &pb.Response{}
 			err := proto.Unmarshal(input, wrappedReq)
 			if err != nil {
 				return nil, err
 			}
 			reqCtx := logger.GetContextWithNoSubfixLogID(ctx, wrappedReq.LogId)
 			// Process reserved commands
-			wrappedRes, err = h.processReservedCommands(reqCtx, wrappedReq)
+			wrappedRes, err := h.processReservedCommands(reqCtx, wrappedReq)
 			if err != nil {
 				logger.Errorf(reqCtx, err.Error())
 			}

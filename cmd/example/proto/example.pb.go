@@ -3,9 +3,11 @@
 
 package example
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,30 +18,79 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type CalculateRequest struct {
-	A                    int32    `protobuf:"varint,1,opt,name=a,proto3" json:"a,omitempty"`
-	B                    int32    `protobuf:"varint,2,opt,name=b,proto3" json:"b,omitempty"`
+type GactusFile struct {
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Content              []byte   `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GactusFile) Reset()         { *m = GactusFile{} }
+func (m *GactusFile) String() string { return proto.CompactTextString(m) }
+func (*GactusFile) ProtoMessage()    {}
+func (*GactusFile) Descriptor() ([]byte, []int) {
+	return fileDescriptor_15a1dc8d40dadaa6, []int{0}
+}
+
+func (m *GactusFile) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GactusFile.Unmarshal(m, b)
+}
+func (m *GactusFile) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GactusFile.Marshal(b, m, deterministic)
+}
+func (m *GactusFile) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GactusFile.Merge(m, src)
+}
+func (m *GactusFile) XXX_Size() int {
+	return xxx_messageInfo_GactusFile.Size(m)
+}
+func (m *GactusFile) XXX_DiscardUnknown() {
+	xxx_messageInfo_GactusFile.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GactusFile proto.InternalMessageInfo
+
+func (m *GactusFile) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *GactusFile) GetContent() []byte {
+	if m != nil {
+		return m.Content
+	}
+	return nil
+}
+
+type CalculateRequest struct {
+	A                    int32       `protobuf:"varint,1,opt,name=a,proto3" json:"a,omitempty"`
+	B                    int32       `protobuf:"varint,2,opt,name=b,proto3" json:"b,omitempty"`
+	File                 *GactusFile `protobuf:"bytes,3,opt,name=file,proto3" json:"file,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
 }
 
 func (m *CalculateRequest) Reset()         { *m = CalculateRequest{} }
 func (m *CalculateRequest) String() string { return proto.CompactTextString(m) }
 func (*CalculateRequest) ProtoMessage()    {}
 func (*CalculateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_example_e6fc68aee0ac38fb, []int{0}
+	return fileDescriptor_15a1dc8d40dadaa6, []int{1}
 }
+
 func (m *CalculateRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CalculateRequest.Unmarshal(m, b)
 }
 func (m *CalculateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CalculateRequest.Marshal(b, m, deterministic)
 }
-func (dst *CalculateRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CalculateRequest.Merge(dst, src)
+func (m *CalculateRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CalculateRequest.Merge(m, src)
 }
 func (m *CalculateRequest) XXX_Size() int {
 	return xxx_messageInfo_CalculateRequest.Size(m)
@@ -64,6 +115,13 @@ func (m *CalculateRequest) GetB() int32 {
 	return 0
 }
 
+func (m *CalculateRequest) GetFile() *GactusFile {
+	if m != nil {
+		return m.File
+	}
+	return nil
+}
+
 type CalculateResponse struct {
 	DebugMessage         string   `protobuf:"bytes,1,opt,name=debug_message,json=debugMessage,proto3" json:"debug_message,omitempty"`
 	C                    int32    `protobuf:"varint,2,opt,name=c,proto3" json:"c,omitempty"`
@@ -76,16 +134,17 @@ func (m *CalculateResponse) Reset()         { *m = CalculateResponse{} }
 func (m *CalculateResponse) String() string { return proto.CompactTextString(m) }
 func (*CalculateResponse) ProtoMessage()    {}
 func (*CalculateResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_example_e6fc68aee0ac38fb, []int{1}
+	return fileDescriptor_15a1dc8d40dadaa6, []int{2}
 }
+
 func (m *CalculateResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CalculateResponse.Unmarshal(m, b)
 }
 func (m *CalculateResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CalculateResponse.Marshal(b, m, deterministic)
 }
-func (dst *CalculateResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CalculateResponse.Merge(dst, src)
+func (m *CalculateResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CalculateResponse.Merge(m, src)
 }
 func (m *CalculateResponse) XXX_Size() int {
 	return xxx_messageInfo_CalculateResponse.Size(m)
@@ -111,21 +170,26 @@ func (m *CalculateResponse) GetC() int32 {
 }
 
 func init() {
+	proto.RegisterType((*GactusFile)(nil), "example.GactusFile")
 	proto.RegisterType((*CalculateRequest)(nil), "example.CalculateRequest")
 	proto.RegisterType((*CalculateResponse)(nil), "example.CalculateResponse")
 }
 
-func init() { proto.RegisterFile("example.proto", fileDescriptor_example_e6fc68aee0ac38fb) }
+func init() { proto.RegisterFile("example.proto", fileDescriptor_15a1dc8d40dadaa6) }
 
-var fileDescriptor_example_e6fc68aee0ac38fb = []byte{
-	// 135 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4d, 0xad, 0x48, 0xcc,
-	0x2d, 0xc8, 0x49, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x87, 0x72, 0x95, 0xf4, 0xb8,
-	0x04, 0x9c, 0x13, 0x73, 0x92, 0x4b, 0x73, 0x12, 0x4b, 0x52, 0x83, 0x52, 0x0b, 0x4b, 0x53, 0x8b,
-	0x4b, 0x84, 0x78, 0xb8, 0x18, 0x13, 0x25, 0x18, 0x15, 0x18, 0x35, 0x58, 0x83, 0x18, 0x13, 0x41,
-	0xbc, 0x24, 0x09, 0x26, 0x08, 0x2f, 0x49, 0xc9, 0x8d, 0x4b, 0x10, 0x49, 0x7d, 0x71, 0x41, 0x7e,
-	0x5e, 0x71, 0xaa, 0x90, 0x32, 0x17, 0x6f, 0x4a, 0x6a, 0x52, 0x69, 0x7a, 0x7c, 0x6e, 0x6a, 0x71,
-	0x71, 0x62, 0x7a, 0x2a, 0x58, 0x33, 0x67, 0x10, 0x0f, 0x58, 0xd0, 0x17, 0x22, 0x06, 0x32, 0x27,
-	0x19, 0x66, 0x4e, 0x72, 0x12, 0x1b, 0xd8, 0x1d, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x58,
-	0xdf, 0xed, 0x08, 0x98, 0x00, 0x00, 0x00,
+var fileDescriptor_15a1dc8d40dadaa6 = []byte{
+	// 202 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x8f, 0x31, 0x4f, 0xc3, 0x30,
+	0x10, 0x85, 0x65, 0x48, 0x88, 0x38, 0x12, 0x09, 0xcc, 0xe2, 0x31, 0x0a, 0x03, 0x99, 0x32, 0xc0,
+	0xc6, 0x8a, 0x14, 0x26, 0x16, 0x2f, 0x8c, 0xe8, 0x6c, 0x8e, 0x28, 0x92, 0x63, 0xa7, 0xb5, 0x2d,
+	0xf5, 0xe7, 0x57, 0x71, 0x6b, 0xb5, 0xdb, 0xbd, 0xa7, 0x7b, 0xf7, 0xbe, 0x83, 0x86, 0x0e, 0xb8,
+	0xac, 0x86, 0x86, 0x75, 0xef, 0x82, 0xe3, 0xd5, 0x59, 0x76, 0x1f, 0x00, 0x5f, 0xa8, 0x43, 0xf4,
+	0xe3, 0x6c, 0x88, 0x73, 0x28, 0x2c, 0x2e, 0x24, 0x58, 0xcb, 0xfa, 0x7b, 0x99, 0x66, 0x2e, 0xa0,
+	0xd2, 0xce, 0x06, 0xb2, 0x41, 0xdc, 0xb4, 0xac, 0xaf, 0x65, 0x96, 0xdd, 0x0f, 0x3c, 0x7e, 0xa2,
+	0xd1, 0xd1, 0x60, 0x20, 0x49, 0xbb, 0x48, 0x3e, 0xf0, 0x1a, 0x18, 0xa6, 0x78, 0x29, 0x19, 0x6e,
+	0x4a, 0xa5, 0x54, 0x29, 0x99, 0xe2, 0xaf, 0x50, 0xfc, 0xcf, 0x86, 0xc4, 0x6d, 0xcb, 0xfa, 0x87,
+	0xb7, 0xe7, 0x21, 0x23, 0x5d, 0x00, 0x64, 0x5a, 0xe8, 0x46, 0x78, 0xba, 0x3a, 0xec, 0x57, 0x67,
+	0x3d, 0xf1, 0x17, 0x68, 0xfe, 0x48, 0xc5, 0xe9, 0x77, 0x21, 0xef, 0x71, 0xca, 0x90, 0x75, 0x32,
+	0xbf, 0x4f, 0xde, 0x56, 0xa8, 0x73, 0xa1, 0x56, 0x77, 0xe9, 0xd9, 0xf7, 0x63, 0x00, 0x00, 0x00,
+	0xff, 0xff, 0x9b, 0x62, 0x18, 0x92, 0xfd, 0x00, 0x00, 0x00,
 }

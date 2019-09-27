@@ -1,9 +1,15 @@
 syntax = "proto3";
 package example;
 
+message GactusFile {
+    string name    = 1;
+    bytes  content = 2;
+}
+
 message CalculateRequest {
-    int32 a = 1;
-    int32 b = 2;
+    int32      a    = 1;
+    int32      b    = 2;
+    GactusFile file = 3;
 }
 
 message CalculateResponse {
