@@ -16,3 +16,8 @@ const (
 	ErrorServiceNotAvailable = "the internal service is not available"
 	ErrorNotFound            = "not found"
 )
+
+// Server Configuration
+const (
+	LimitSize = 24
+)

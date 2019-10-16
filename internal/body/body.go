@@ -3,12 +3,15 @@ package body
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/mr-panta/gactus/internal/config"
 
 	"github.com/golang/protobuf/proto"
 	pb "github.com/mr-panta/gactus/proto"
@@ -128,12 +131,12 @@ func Unmarshal(wrappedReq *pb.Request, msg proto.Message) (err error) {
 }
 
 func unmarshalFormData(req *http.Request, msg proto.Message) (err error) {
-	err = req.ParseMultipartForm((1 << 20) * 24) // TODO: get this value by config
+	err = req.ParseMultipartForm((1 << 20) * config.LimitSize)
 	if err != nil {
 		return err
 	}
-	// form := req.MultipartForm
-	v := reflect.Indirect(reflect.ValueOf(msg))
+	form := req.MultipartForm
+	v := reflect.ValueOf(msg).Elem()
 	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
 		tag := t.Field(i).Tag.Get("json")
@@ -152,20 +155,34 @@ func unmarshalFormData(req *http.Request, msg proto.Message) (err error) {
 		if err != nil {
 			return err
 		}
-		// TODO: implement this
 		// Map complex data type
 		if !found {
 			if kind == reflect.Slice {
-
-			}
-			typePath := strings.Split(t.Field(i).Type.String(), ".")
-			if typePath[len(typePath)-1] == "GactusFile" {
-				fileName, nameExists := t.Field(i).Type.FieldByName("Name")
-				fileContent, contentExists := t.Field(i).Type.FieldByName("Content")
-				if nameExists && contentExists {
-					fmt.Println(fileName, fileContent)
+				elemKind := v.Field(i).Type().Elem()
+				typePath := strings.Split(elemKind.String(), ".")
+				if typePath[len(typePath)-1] == "GactusFile" {
+					for _, file := range form.File[key] {
+						elem := reflect.New(elemKind).Elem()
+						_, err = mapGactusFileType(elem, file)
+						if err != nil {
+							return err
+						}
+						v.Field(i).Set(reflect.Append(v.Field(i), elem))
+					}
 				} else {
-					return errors.New("GactusFile type does not have name and content field")
+					for _, value := range form.Value[key] {
+						elem := reflect.New(elemKind).Elem()
+						_, err = mapBasicDataType(elem, elemKind.Kind(), value)
+						if err != nil {
+							return err
+						}
+						v.Field(i).Set(reflect.Append(v.Field(i), elem))
+					}
+				}
+			} else if len(form.File[key]) > 0 {
+				_, err = mapGactusFileType(v.Field(i), form.File[key][0])
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -178,7 +195,7 @@ func unmarshalXWWWURLEncoded(req *http.Request, msg proto.Message) (err error) {
 	if err != nil {
 		return
 	}
-	v := reflect.Indirect(reflect.ValueOf(msg))
+	v := reflect.ValueOf(msg).Elem()
 	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
 		tag := t.Field(i).Tag.Get("json")
@@ -198,6 +215,37 @@ func unmarshalXWWWURLEncoded(req *http.Request, msg proto.Message) (err error) {
 		}
 	}
 	return nil
+}
+
+func mapGactusFileType(v reflect.Value, fileHeader *multipart.FileHeader) (match bool, err error) {
+	typePath := strings.Split(v.Type().String(), ".")
+	if typePath[len(typePath)-1] == "GactusFile" {
+
+		gactusFile := reflect.New(v.Type().Elem()).Elem()
+		nameField, nameExists := gactusFile.Type().FieldByName("Name")
+		contentField, contentExists := gactusFile.Type().FieldByName("Content")
+
+		if nameExists && contentExists && nameField.Type.Kind() == reflect.String &&
+			contentField.Type.Kind() == reflect.Slice {
+
+			file, err := fileHeader.Open()
+			if err != nil {
+				return false, err
+			}
+			data, err := ioutil.ReadAll(file)
+			if err != nil {
+				return false, err
+			}
+			gactusFile.FieldByName("Name").SetString(fileHeader.Filename)
+			gactusFile.FieldByName("Content").SetBytes(data)
+			v.Set(gactusFile.Addr())
+			return true, nil
+		} else {
+			return false, errors.New("GactusFile type does not have name and content field")
+		}
+	}
+	return false, nil
+
 }
 
 func mapBasicDataType(v reflect.Value, kind reflect.Kind, value string) (found bool, err error) {

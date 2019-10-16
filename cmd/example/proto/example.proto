@@ -7,9 +7,11 @@ message GactusFile {
 }
 
 message CalculateRequest {
-    int32      a    = 1;
-    int32      b    = 2;
-    GactusFile file = 3;
+    int32      a                = 1;
+    int32      b                = 2;
+    GactusFile file             = 3;
+    repeated   GactusFile files = 5;
+    repeated   string names     = 4;
 }
 
 message CalculateResponse {

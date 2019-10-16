@@ -23,14 +23,14 @@ func main() {
 		coreAddr = fmt.Sprintf("127.0.0.1:%d", gactus.DefaultCoreTCPPort)
 	}
 
-	// Get TCP address
-	tcpAddr, err := strconv.Atoi(os.Getenv(gactus.ServiceTCPPortVar))
+	// Get TCP port
+	tcpPort, err := strconv.Atoi(os.Getenv(gactus.ServiceTCPPortVar))
 	if err != nil {
-		tcpAddr = 3000
+		tcpPort = 3000
 	}
 
 	// Setup and start service server
-	service, err := gactus.NewService("calculator", coreAddr, tcpAddr, 1, 10, 100, 10, 1000)
+	service, err := gactus.NewService("calculator", coreAddr, tcpPort, 1, 10, 100, 10, 1000)
 	if err != nil {
 		logger.Fatalf(ctx, err.Error())
 	}
@@ -59,7 +59,10 @@ func getProcessorList() []*gactus.Processor {
 				request := req.(*pb.CalculateRequest)
 				response := res.(*pb.CalculateResponse)
 				response.C = request.A + request.B
-				logger.Infof(ctx, "%v %v", request, response)
+				logger.Debugf(ctx, "%d", len(request.Files))
+				for _, f := range request.Files {
+					logger.Debugf(ctx, "name:%s content:%s", string(f.Name), string(f.Content))
+				}
 				return uint32(gtpb.Constant_RESPONSE_OK)
 			},
 		},
