@@ -19,5 +19,5 @@ const (
 
 // Server Configuration
 const (
-	LimitSize = 24
+	LimitSize = 128
 )

@@ -139,29 +139,22 @@ func unmarshalFormData(req *http.Request, msg proto.Message) (err error) {
 	v := reflect.ValueOf(msg).Elem()
 	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
-		tag := t.Field(i).Tag.Get("json")
-		if tag == "-" {
+		tag, exists := getJSONTag(t.Field(i))
+		if !exists {
 			continue
 		}
-		sTag := strings.Split(tag, ",")
-		key := sTag[0]
-		kind := t.Field(i).Type.Kind()
 		// Map basic data type
-		found, err := mapBasicDataType(
-			v.Field(i),
-			kind,
-			req.FormValue(key),
-		)
+		found, err := mapBasicDataType(v.Field(i), req.FormValue(tag))
 		if err != nil {
 			return err
 		}
 		// Map complex data type
 		if !found {
-			if kind == reflect.Slice {
+			if v.Field(i).Kind() == reflect.Slice {
 				elemKind := v.Field(i).Type().Elem()
 				typePath := strings.Split(elemKind.String(), ".")
 				if typePath[len(typePath)-1] == "GactusFile" {
-					for _, file := range form.File[key] {
+					for _, file := range form.File[tag] {
 						elem := reflect.New(elemKind).Elem()
 						_, err = mapGactusFileType(elem, file)
 						if err != nil {
@@ -170,17 +163,17 @@ func unmarshalFormData(req *http.Request, msg proto.Message) (err error) {
 						v.Field(i).Set(reflect.Append(v.Field(i), elem))
 					}
 				} else {
-					for _, value := range form.Value[key] {
+					for _, value := range form.Value[tag] {
 						elem := reflect.New(elemKind).Elem()
-						_, err = mapBasicDataType(elem, elemKind.Kind(), value)
+						_, err = mapBasicDataType(elem, value)
 						if err != nil {
 							return err
 						}
 						v.Field(i).Set(reflect.Append(v.Field(i), elem))
 					}
 				}
-			} else if len(form.File[key]) > 0 {
-				_, err = mapGactusFileType(v.Field(i), form.File[key][0])
+			} else if len(form.File[tag]) > 0 {
+				_, err = mapGactusFileType(v.Field(i), form.File[tag][0])
 				if err != nil {
 					return err
 				}
@@ -198,23 +191,25 @@ func unmarshalXWWWURLEncoded(req *http.Request, msg proto.Message) (err error) {
 	v := reflect.ValueOf(msg).Elem()
 	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
-		tag := t.Field(i).Tag.Get("json")
-		if tag == "-" {
+		tag, exists := getJSONTag(t.Field(i))
+		if !exists {
 			continue
 		}
-		sTag := strings.Split(tag, ",")
-		key := sTag[0]
-		kind := t.Field(i).Type.Kind()
-		_, err := mapBasicDataType(
-			v.Field(i),
-			kind,
-			req.FormValue(key),
-		)
+		_, err := mapBasicDataType(v.Field(i), req.FormValue(tag))
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func getJSONTag(field reflect.StructField) (tag string, exists bool) {
+	fullTag := field.Tag.Get("json")
+	if len(fullTag) == 0 || fullTag == "-" {
+		return "", false
+	}
+	sTag := strings.Split(fullTag, ",")
+	return sTag[0], true
 }
 
 func mapGactusFileType(v reflect.Value, fileHeader *multipart.FileHeader) (match bool, err error) {
@@ -225,9 +220,7 @@ func mapGactusFileType(v reflect.Value, fileHeader *multipart.FileHeader) (match
 		nameField, nameExists := gactusFile.Type().FieldByName("Name")
 		contentField, contentExists := gactusFile.Type().FieldByName("Content")
 
-		if nameExists && contentExists && nameField.Type.Kind() == reflect.String &&
-			contentField.Type.Kind() == reflect.Slice {
-
+		if nameExists && contentExists && nameField.Type.Kind() == reflect.String && contentField.Type.Kind() == reflect.Slice {
 			file, err := fileHeader.Open()
 			if err != nil {
 				return false, err
@@ -248,54 +241,55 @@ func mapGactusFileType(v reflect.Value, fileHeader *multipart.FileHeader) (match
 
 }
 
-func mapBasicDataType(v reflect.Value, kind reflect.Kind, value string) (found bool, err error) {
+func mapBasicDataType(v reflect.Value, value string) (found bool, err error) {
+	kind := v.Kind()
 	found = true
 	switch kind {
 	case reflect.Bool:
 		data, err := strconv.ParseBool(value)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetBool(data)
 	case reflect.Float32:
 		data, err := strconv.ParseFloat(value, 32)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetFloat(data)
 	case reflect.Float64:
 		data, err := strconv.ParseFloat(value, 64)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetFloat(data)
 	case reflect.Int:
 		data, err := strconv.Atoi(value)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetInt(int64(data))
 	case reflect.Int8:
 		data, err := strconv.ParseInt(value, 10, 8)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetInt(data)
 	case reflect.Int16:
 		data, err := strconv.ParseInt(value, 10, 16)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetInt(data)
 	case reflect.Int32:
 		data, err := strconv.ParseInt(value, 10, 32)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetInt(data)
 	case reflect.Int64:
 		data, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetInt(data)
@@ -303,31 +297,31 @@ func mapBasicDataType(v reflect.Value, kind reflect.Kind, value string) (found b
 		v.SetString(value)
 	case reflect.Uint:
 		data, err := strconv.ParseUint(value, 10, 32)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetUint(data)
 	case reflect.Uint8:
 		data, err := strconv.ParseUint(value, 10, 8)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetUint(data)
 	case reflect.Uint16:
 		data, err := strconv.ParseUint(value, 10, 16)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetUint(data)
 	case reflect.Uint32:
 		data, err := strconv.ParseUint(value, 10, 32)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetUint(data)
 	case reflect.Uint64:
 		data, err := strconv.ParseUint(value, 10, 64)
-		if err != nil {
+		if value != "" && err != nil {
 			return false, err
 		}
 		v.SetUint(data)

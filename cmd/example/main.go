@@ -61,7 +61,7 @@ func getProcessorList() []*gactus.Processor {
 				response.C = request.A + request.B
 				logger.Debugf(ctx, "%d", len(request.Files))
 				for _, f := range request.Files {
-					logger.Debugf(ctx, "name:%s content:%s", string(f.Name), string(f.Content))
+					logger.Debugf(ctx, "name:%s | size:%d bytes", string(f.Name), len(f.Content))
 				}
 				return uint32(gtpb.Constant_RESPONSE_OK)
 			},
