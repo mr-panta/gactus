@@ -33,9 +33,10 @@ message Request {
     string               log_id           = 2;
     string               command          = 3;
     bool                 is_proto         = 4;
-    bytes                body             = 5;
-    Constant.ContentType content_type     = 6;
-    string               raw_content_type = 7;
+    map<string, string>  header           = 5;
+    bytes                body             = 6;
+    Constant.ContentType content_type     = 7;
+    string               raw_content_type = 8;
 }
 
 message Response {

@@ -11,9 +11,10 @@ import (
 
 // Processor [TOWRITE]
 type Processor struct {
-	Req     proto.Message
-	Res     proto.Message
-	Process func(ctx context.Context, req, res proto.Message) (code uint32)
+	Req            proto.Message
+	Res            proto.Message
+	HTTPMiddleware func(ctx context.Context, header map[string]string, req, res proto.Message)
+	Process        func(ctx context.Context, req, res proto.Message) (code uint32)
 }
 
 // Handler [TOWRITE]
@@ -26,9 +27,7 @@ type Handler interface {
 // NewHandler [TOWRITE]
 func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod int) (Handler, error) {
 	coreClient, err := tcpclient.NewClient(
-		coreAddr,
-		0,
-		1,
+		coreAddr, 0, 1,
 		time.Duration(idleConnTimeout)*time.Millisecond,
 		time.Duration(waitConnTimeout)*time.Millisecond,
 		time.Duration(clearPeriod)*time.Millisecond,

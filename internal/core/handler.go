@@ -62,6 +62,14 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Get header
+	header := make(map[string]string)
+	for key, values := range req.Header {
+		if len(values) > 0 {
+			header[key] = values[0]
+		}
+	}
+
 	// Get body
 	body, err = ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -80,6 +88,7 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		LogId:          logID,
 		ContentType:    contentType,
 		RawContentType: rawContentType,
+		Header:         header,
 		Body:           body,
 		IsProto:        false,
 	}

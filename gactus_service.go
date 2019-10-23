@@ -104,9 +104,10 @@ func (c *gactusService) RegisterService(processors []*Processor) error {
 			HttpConfig: processor.HTTPConfig,
 		}
 		c.handler.SetProcessor(processor.Command, &service.Processor{
-			Req:     processor.Req,
-			Res:     processor.Res,
-			Process: processor.Process,
+			Req:            processor.Req,
+			Res:            processor.Res,
+			HTTPMiddleware: processor.HTTPMiddleware,
+			Process:        processor.Process,
 		})
 	}
 	res := &pb.RegisterServiceResponse{}
