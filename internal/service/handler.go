@@ -248,9 +248,11 @@ func (h *handler) handleRequest(ctx context.Context, wrappedReq *pb.Request) (
 		return wrappedRes, err
 	}
 	if !wrappedReq.IsProto && processor.HTTPMiddleware != nil {
-		processor.HTTPMiddleware(ctx, wrappedReq.Header, wrappedReq.Query, req, res)
+		wrappedRes.Code = processor.HTTPMiddleware(ctx, wrappedReq.Header, wrappedReq.Query, req, res)
 	}
-	wrappedRes.Code = processor.Process(ctx, req, res)
+	if wrappedRes.Code == uint32(pb.Constant_RESPONSE_OK) {
+		wrappedRes.Code = processor.Process(ctx, req, res)
+	}
 	if wrappedReq.IsProto {
 		wrappedRes.Body, err = proto.Marshal(res)
 	} else {

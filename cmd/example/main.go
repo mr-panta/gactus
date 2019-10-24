@@ -55,7 +55,7 @@ func getProcessorList() []*gactus.Processor {
 				Method: gtpb.Constant_HTTP_METHOD_POST,
 				Path:   "/calculator/add",
 			},
-			HTTPMiddleware: func(ctx context.Context, header, query map[string]string, req, res proto.Message) {
+			HTTPMiddleware: func(ctx context.Context, header, query map[string]string, req, res proto.Message) (code uint32)) {
 				for key, value := range header {
 					logger.Debugf(ctx, "%s: %s", key, value)
 				}
