@@ -240,7 +240,7 @@ func (h *handler) handleRequest(ctx context.Context, wrappedReq *pb.Request) (
 	res := proto.Clone(processor.Res)
 	if wrappedReq.IsProto {
 		err = proto.Unmarshal(wrappedReq.Body, req)
-	} else {
+	} else if wrappedReq.ContentType != pb.Constant_CONTENT_TYPE_UNKNOWN {
 		err = bd.Unmarshal(wrappedReq, req)
 	}
 	if err != nil {

@@ -79,11 +79,13 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// Get body
-	body, err = ioutil.ReadAll(req.Body)
-	if err != nil {
-		err = fmt.Errorf("cannot read body, err=%v", err)
-		statusCode = http.StatusInternalServerError
-		return
+	if contentType != pb.Constant_CONTENT_TYPE_UNKNOWN {
+		body, err = ioutil.ReadAll(req.Body)
+		if err != nil {
+			err = fmt.Errorf("cannot read body, err=%v", err)
+			statusCode = http.StatusInternalServerError
+			return
+		}
 	}
 
 	// Get sender address
