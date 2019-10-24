@@ -34,9 +34,10 @@ message Request {
     string               command          = 3;
     bool                 is_proto         = 4;
     map<string, string>  header           = 5;
-    bytes                body             = 6;
-    Constant.ContentType content_type     = 7;
-    string               raw_content_type = 8;
+    map<string, string>  query            = 6;
+    bytes                body             = 7;
+    Constant.ContentType content_type     = 8;
+    string               raw_content_type = 9;
 }
 
 message Response {

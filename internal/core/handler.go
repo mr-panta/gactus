@@ -70,6 +70,14 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	// Get query
+	query := make(map[string]string)
+	for key, values := range req.URL.Query() {
+		if len(values) > 0 {
+			query[key] = values[0]
+		}
+	}
+
 	// Get body
 	body, err = ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -89,6 +97,7 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		ContentType:    contentType,
 		RawContentType: rawContentType,
 		Header:         header,
+		Query:          query,
 		Body:           body,
 		IsProto:        false,
 	}

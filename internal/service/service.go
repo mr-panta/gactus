@@ -13,7 +13,7 @@ import (
 type Processor struct {
 	Req            proto.Message
 	Res            proto.Message
-	HTTPMiddleware func(ctx context.Context, header map[string]string, req, res proto.Message)
+	HTTPMiddleware func(ctx context.Context, header, query map[string]string, req, res proto.Message)
 	Process        func(ctx context.Context, req, res proto.Message) (code uint32)
 }
 
