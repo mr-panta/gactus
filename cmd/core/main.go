@@ -1,32 +1,19 @@
 package main
 
 import (
-	"os"
-	"strconv"
+	"context"
 
+	"github.com/joho/godotenv"
 	"github.com/mr-panta/gactus"
+	"github.com/mr-panta/go-logger"
 )
 
 func main() {
-	// Get HTTP port
-	httpPort, err := strconv.Atoi(os.Getenv(gactus.CoreHTTPPortVar))
+	err := godotenv.Load("./cmd/core/.env")
 	if err != nil {
-		httpPort = gactus.DefaultCoreHTTPPort
+		logger.Fatalf(context.Background(), err.Error())
 	}
-
-	// Get TCP port
-	tcpPort, err := strconv.Atoi(os.Getenv(gactus.CoreTCPPortVar))
-	if err != nil {
-		tcpPort = gactus.DefaultCoreTCPPort
-	}
-
-	// Get health check interval
-	healthCheckInterval, err := strconv.Atoi(os.Getenv(gactus.CoreDefaultHealthCheckIntervalVar))
-	if err != nil {
-		healthCheckInterval = gactus.DefaultHealthCheckInterval
-	}
-
-	core := gactus.NewCore(httpPort, tcpPort, healthCheckInterval)
+	core := gactus.NewCore()
 	core.Start()
 	core.Wait()
 }

@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
+	"github.com/joho/godotenv"
 	"github.com/mr-panta/gactus/internal/core"
 	"github.com/mr-panta/go-logger"
 )
@@ -19,7 +21,38 @@ type gactusCore struct {
 }
 
 // NewCore [TOWRITE]
-func NewCore(httpPort, tcpPort, healthCheckInterval int) Core {
+func NewCore() Core {
+	// Get env
+	_ = godotenv.Load()
+
+	// Get HTTP port
+	httpPort, err := strconv.Atoi(os.Getenv(CoreHTTPPortVar))
+	if err != nil {
+		httpPort = DefaultCoreHTTPPort
+	}
+
+	// Get TCP port
+	tcpPort, err := strconv.Atoi(os.Getenv(CoreTCPPortVar))
+	if err != nil {
+		tcpPort = DefaultCoreTCPPort
+	}
+
+	// Get health check interval
+	healthCheckInterval, err := strconv.Atoi(os.Getenv(CoreDefaultHealthCheckIntervalVar))
+	if err != nil {
+		healthCheckInterval = DefaultHealthCheckInterval
+	}
+
+	return NewCoreWithConfig(httpPort, tcpPort, healthCheckInterval)
+}
+
+func NewCoreWithConfig(httpPort, tcpPort, healthCheckInterval int) Core {
+
+	ctx := context.Background()
+	logger.Infof(ctx, "GACTUS_CORE_HTTP_PORT=%d", httpPort)
+	logger.Infof(ctx, "GACTUS_CORE_TCP_PORT=%d", tcpPort)
+	logger.Infof(ctx, "GACTUS_CORE_HEALTH_CHECK_INTERVAL=%d", healthCheckInterval)
+
 	return &gactusCore{
 		httpPort: httpPort,
 		tcpPort:  tcpPort,

@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
+	"github.com/joho/godotenv"
 	"github.com/mr-panta/gactus/internal/util"
 
 	"github.com/golang/protobuf/proto"
@@ -29,9 +31,82 @@ type gactusService struct {
 	clearPeriod     int
 }
 
-// NewService [TOWRITE]
-func NewService(name, coreAddr string, tcpPort, minConns, maxConns, idleConnTimeout, waitConnTimeout,
+func NewService() (Service, error) {
+	// Get env
+	_ = godotenv.Load()
+
+	// Get service name
+	name := os.Getenv(ServiceNameVar)
+	if name == "" {
+		return nil, errors.New("config GACTUS_SERVICE_NAME does not exist")
+	}
+
+	// Get core address
+	coreAddr := os.Getenv(ServiceCoreAddrVar)
+	if coreAddr == "" {
+		return nil, errors.New("config GACTUS_SERVICE_CORE_ADDR does not exist")
+	}
+
+	// Get TCP port
+	tcpPort, err := strconv.Atoi(os.Getenv(ServiceTCPPortVar))
+	if err != nil {
+		tcpPort = DefaultServiceTCPPort
+	}
+
+	// Get minimum number of connection
+	minConns, err := strconv.Atoi(os.Getenv(ServiceMinConnsVar))
+	if err != nil {
+		minConns = DefaultServiceMinConns
+	}
+
+	// Get maximum number of connection
+	maxConns, err := strconv.Atoi(os.Getenv(ServiceMaxConnsVar))
+	if err != nil {
+		maxConns = DefaultServiceMaxConns
+	}
+
+	// Get duration idle connection timeout
+	idleConnTimeout, err := strconv.Atoi(os.Getenv(ServiceIdleConnTimeoutVar))
+	if err != nil {
+		idleConnTimeout = DefaultServiceIdleConnTimeout
+	}
+
+	// Get duration waiting connection timeout
+	waitConnTimeout, err := strconv.Atoi(os.Getenv(ServiceWaitConnTimeoutVar))
+	if err != nil {
+		waitConnTimeout = DefaultServiceWaitConnTimeout
+	}
+
+	// Get duration clearing connection pool
+	clearPeriod, err := strconv.Atoi(os.Getenv(ServiceClearPeriodVar))
+	if err != nil {
+		clearPeriod = DefaultServiceClearPeriod
+	}
+
+	return NewServiceWithConfig(
+		name,
+		coreAddr,
+		tcpPort,
+		minConns,
+		maxConns,
+		idleConnTimeout,
+		waitConnTimeout,
+		clearPeriod,
+	)
+}
+
+func NewServiceWithConfig(name, coreAddr string, tcpPort, minConns, maxConns, idleConnTimeout, waitConnTimeout,
 	clearPeriod int) (Service, error) {
+
+	ctx := context.Background()
+	logger.Infof(ctx, "GACTUS_SERVICE_NAME=%s", name)
+	logger.Infof(ctx, "GACTUS_SERVICE_CORE_ADDR=%s", coreAddr)
+	logger.Infof(ctx, "GACTUS_SERVICE_TCP_PORT=%d", tcpPort)
+	logger.Infof(ctx, "GACTUS_SERVICE_MIN_CONNS=%d", minConns)
+	logger.Infof(ctx, "GACTUS_SERVICE_MAX_CONNS=%d", maxConns)
+	logger.Infof(ctx, "GACTUS_SERVICE_IDLE_CONN_TIMEOUT=%d", idleConnTimeout)
+	logger.Infof(ctx, "GACTUS_SERVICE_WAIT_CONN_TIMEOUT=%d", waitConnTimeout)
+	logger.Infof(ctx, "GACTUS_SERVICE_CLEAR_PERIOD=%d", clearPeriod)
 
 	handler, err := service.NewHandler(coreAddr, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod)
 	if err != nil {
