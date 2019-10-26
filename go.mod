@@ -6,5 +6,5 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/joho/godotenv v1.3.0
 	github.com/mr-panta/go-logger v0.3.2
-	github.com/mr-panta/go-tcpclient v0.5.5
+	github.com/mr-panta/go-tcpclient v0.5.6
 )

@@ -177,7 +177,6 @@ func (h *handler) updateRegistries(ctx context.Context, wrappedReq *pb.Request) 
 			time.Duration(addrConf.ConnConfig.IdleConnTimeout)*time.Microsecond,
 			time.Duration(addrConf.ConnConfig.WaitConnTimeout)*time.Microsecond,
 			time.Duration(addrConf.ConnConfig.ClearPeriod)*time.Microsecond,
-			time.Duration(addrConf.ConnConfig.ReadTimeout)*time.Microsecond,
 		)
 		if err != nil {
 			wrappedRes.Code = uint32(pb.Constant_RESPONSE_CREATE_CLIENT_FAILED)
