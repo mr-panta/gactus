@@ -109,14 +109,14 @@ func serviceHealthCheck(ctx context.Context, client tcpclient.Client) (res *pb.H
 
 func verifyServiceAddresses(ctx context.Context, addrs []string) (addr string, err error) {
 	for _, addr := range addrs {
-		client, err := tcpclient.NewClient(addr, 1, 1, 0, 0, time.Second)
+		client, err := tcpclient.NewClient(addr, 1, 1, 0, 0, time.Second, 30*time.Second)
 		if err == nil {
 			_, err = serviceHealthCheck(ctx, client)
 			if err == nil {
 				return addr, nil
 			}
 		}
-		client.Close()
+		logger.Errorf(ctx, err.Error())
 	}
 	return "", errors.New("cannot verify service addresses")
 }
@@ -148,6 +148,7 @@ func (m *serviceManager) registerService(ctx context.Context, wrappedReq *pb.Req
 		time.Duration(req.ConnConfig.IdleConnTimeout)*time.Millisecond,
 		time.Duration(req.ConnConfig.WaitConnTimeout)*time.Millisecond,
 		time.Duration(req.ConnConfig.ClearPeriod)*time.Millisecond,
+		time.Duration(req.ConnConfig.ReadTimeout)*time.Microsecond,
 	)
 	if err != nil {
 		return nil, err

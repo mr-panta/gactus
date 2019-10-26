@@ -29,6 +29,7 @@ type gactusService struct {
 	idleConnTimeout int
 	waitConnTimeout int
 	clearPeriod     int
+	readTimeout     int
 }
 
 func NewService() (Service, error) {
@@ -83,6 +84,12 @@ func NewService() (Service, error) {
 		clearPeriod = DefaultServiceClearPeriod
 	}
 
+	// Get connection read timeout
+	readTimeout, err := strconv.Atoi(os.Getenv(ServiceReadTimeoutVar))
+	if err != nil {
+		readTimeout = DefaultServiceReadTimeout
+	}
+
 	return NewServiceWithConfig(
 		name,
 		coreAddr,
@@ -92,11 +99,12 @@ func NewService() (Service, error) {
 		idleConnTimeout,
 		waitConnTimeout,
 		clearPeriod,
+		readTimeout,
 	)
 }
 
 func NewServiceWithConfig(name, coreAddr string, tcpPort, minConns, maxConns, idleConnTimeout, waitConnTimeout,
-	clearPeriod int) (Service, error) {
+	clearPeriod, readTimeout int) (Service, error) {
 
 	ctx := context.Background()
 	logger.Infof(ctx, "GACTUS_SERVICE_NAME=%s", name)
@@ -107,8 +115,9 @@ func NewServiceWithConfig(name, coreAddr string, tcpPort, minConns, maxConns, id
 	logger.Infof(ctx, "GACTUS_SERVICE_IDLE_CONN_TIMEOUT=%d", idleConnTimeout)
 	logger.Infof(ctx, "GACTUS_SERVICE_WAIT_CONN_TIMEOUT=%d", waitConnTimeout)
 	logger.Infof(ctx, "GACTUS_SERVICE_CLEAR_PERIOD=%d", clearPeriod)
+	logger.Infof(ctx, "GACTUS_SERVICE_READ_TIMEOUT=%d", readTimeout)
 
-	handler, err := service.NewHandler(coreAddr, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod)
+	handler, err := service.NewHandler(coreAddr, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod, readTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +131,7 @@ func NewServiceWithConfig(name, coreAddr string, tcpPort, minConns, maxConns, id
 		idleConnTimeout: idleConnTimeout,
 		waitConnTimeout: waitConnTimeout,
 		clearPeriod:     clearPeriod,
+		readTimeout:     readTimeout,
 	}, nil
 }
 
@@ -171,6 +181,7 @@ func (c *gactusService) RegisterService(processors []*Processor) error {
 			IdleConnTimeout: uint32(c.idleConnTimeout),
 			WaitConnTimeout: uint32(c.waitConnTimeout),
 			ClearPeriod:     uint32(c.clearPeriod),
+			ReadTimeout:     uint32(c.readTimeout),
 		},
 	}
 	for i, processor := range processors {

@@ -25,12 +25,13 @@ type Handler interface {
 }
 
 // NewHandler [TOWRITE]
-func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod int) (Handler, error) {
+func NewHandler(coreAddr string, minConns, maxConns, idleConnTimeout, waitConnTimeout, clearPeriod, readTimeout int) (Handler, error) {
 	coreClient, err := tcpclient.NewClient(
 		coreAddr, 0, 1,
 		time.Duration(idleConnTimeout)*time.Millisecond,
 		time.Duration(waitConnTimeout)*time.Millisecond,
 		time.Duration(clearPeriod)*time.Millisecond,
+		time.Duration(readTimeout)*time.Millisecond,
 	)
 	if err != nil {
 		return nil, err

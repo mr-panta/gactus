@@ -17,6 +17,7 @@ const (
 	ServiceIdleConnTimeoutVar = "GACTUS_SERVICE_IDLE_CONN_TIMEOUT"
 	ServiceWaitConnTimeoutVar = "GACTUS_SERVICE_WAIT_CONN_TIMEOUT"
 	ServiceClearPeriodVar     = "GACTUS_SERVICE_CLEAR_PERIOD"
+	ServiceReadTimeoutVar     = "GACTUS_SERVICE_READ_TIMEOUT"
 )
 
 // Default core variables
@@ -34,4 +35,5 @@ const (
 	DefaultServiceIdleConnTimeout = 100
 	DefaultServiceWaitConnTimeout = 10
 	DefaultServiceClearPeriod     = 1000
+	DefaultServiceReadTimeout     = 30000
 )

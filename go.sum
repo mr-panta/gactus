@@ -7,3 +7,5 @@ github.com/mr-panta/go-logger v0.3.2 h1:xcyB/TN+lDl7nulfFJG6wWHQWufxgGCg/zy1Jh+h
 github.com/mr-panta/go-logger v0.3.2/go.mod h1:no6zubQjADjB0KyPPtEubDaNXkreMCrRHWL73PWDRr4=
 github.com/mr-panta/go-tcpclient v0.5.4 h1:ZxhvxUYJAFeA45PaPudNaLQDuZemE6Wox/LCabmkqew=
 github.com/mr-panta/go-tcpclient v0.5.4/go.mod h1:OZeSqYcejEel3Pg+FHOvJjRRFm6Qn+wN4dElsLjF9/A=
+github.com/mr-panta/go-tcpclient v0.5.5 h1:lOEm0IGjLVtH7e5pN0FPgvRAULqGDQgOSE1dB8fBxFA=
+github.com/mr-panta/go-tcpclient v0.5.5/go.mod h1:OZeSqYcejEel3Pg+FHOvJjRRFm6Qn+wN4dElsLjF9/A=
