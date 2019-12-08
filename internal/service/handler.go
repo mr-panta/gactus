@@ -28,7 +28,30 @@ type handler struct {
 	idleConnTimeout     time.Duration
 	waitConnTimeout     time.Duration
 	clearPeriod         time.Duration
-	lock                sync.Mutex
+	lock                sync.RWMutex
+}
+
+// Getter methods
+
+func (h *handler) getAddrsByCommand(command string) (addrs []string, exists bool) {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	addrs, exists = h.commandToAddrsMap[command]
+	return addrs, exists
+}
+
+func (h *handler) getClientByAddr(addr string) (client tcpclient.Client, exists bool) {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	client, exists = h.addrToClientMap[addr]
+	return client, exists
+}
+
+func (h *handler) getProcessorByCommand(command string) (processor *Processor, exists bool) {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	processor, exists = h.commandProcessorMap[command]
+	return processor, exists
 }
 
 // SetProcess [TOWRITE]
@@ -47,14 +70,13 @@ func (h *handler) setupCoreData() {
 }
 
 func (h *handler) getServiceConn(command string) (service tcpclient.Client, exists bool) {
-	addrs := h.commandToAddrsMap[command]
+	addrs, _ := h.getAddrsByCommand(command)
 	addrsLength := len(addrs)
 	if addrsLength == 0 {
 		return nil, false
 	}
 	addr := addrs[rand.Intn(addrsLength)]
-	service, exists = h.addrToClientMap[addr]
-	return
+	return h.getClientByAddr(addr)
 }
 
 // SendRequest is used to send request in bytes form to core server
@@ -231,7 +253,7 @@ func (h *handler) handleRequest(ctx context.Context, wrappedReq *pb.Request) (
 		}
 	}()
 
-	processor, exists := h.commandProcessorMap[wrappedReq.Command]
+	processor, exists := h.getProcessorByCommand(wrappedReq.Command)
 	if !exists {
 		wrappedRes.Code = uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)
 		return wrappedRes, nil

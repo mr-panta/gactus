@@ -24,7 +24,7 @@ type serviceManager struct {
 	addrToClientMap     map[string]tcpclient.Client
 	addrToConnConfigMap map[string]*pb.ConnectionConfig
 	healthCheckInterval time.Duration
-	lock                sync.Mutex
+	lock                sync.RWMutex
 }
 
 func newServiceManager(healthCheckInterval int) *serviceManager {
@@ -39,21 +39,73 @@ func newServiceManager(healthCheckInterval int) *serviceManager {
 	return m
 }
 
+// Getter and setter methods
+
+func (m *serviceManager) getCommandByRoute(route string) (command string, exists bool) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	command, exists = m.routeToCommandMap[route]
+	return command, exists
+}
+
+func (m *serviceManager) getCommandsWithAddrsList() (commands []string, addrsList [][]string) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	for command, addrs := range m.commandToAddrsMap {
+		commands = append(commands, command)
+		addrsList = append(addrsList, addrs)
+	}
+	return commands, addrsList
+}
+
+func (m *serviceManager) getAddrsByCommand(command string) (addrs []string, exists bool) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	addrs, exists = m.commandToAddrsMap[command]
+	return addrs, exists
+}
+func (m *serviceManager) getAddrsWithClients() (addrs []string, clients []tcpclient.Client) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	for addr, client := range m.addrToClientMap {
+		addrs = append(addrs, addr)
+		clients = append(clients, client)
+	}
+	return addrs, clients
+}
+
+func (m *serviceManager) getClientByAddr(addr string) (client tcpclient.Client, exists bool) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	client, exists = m.addrToClientMap[addr]
+	return client, exists
+}
+
+func (m *serviceManager) getAddrsWithConnConfigs() (addrs []string, cfgs []*pb.ConnectionConfig) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	for addr, cfg := range m.addrToConnConfigMap {
+		addrs = append(addrs, addr)
+		cfgs = append(cfgs, cfg)
+	}
+	return addrs, cfgs
+}
+
+// Normal methods
+
 func (m *serviceManager) getCommand(method, path string) (command string, exists bool) {
 	route := getRoute(method, path)
-	command, exists = m.routeToCommandMap[route]
-	return
+	return m.getCommandByRoute(route)
 }
 
 func (m *serviceManager) getServiceConn(command string) (service tcpclient.Client, exists bool) {
-	addrs := m.commandToAddrsMap[command]
+	addrs, _ := m.getAddrsByCommand(command)
 	addrsLength := len(addrs)
 	if addrsLength == 0 {
 		return nil, false
 	}
 	addr := addrs[rand.Intn(addrsLength)]
-	service, exists = m.addrToClientMap[addr]
-	return
+	return m.getClientByAddr(addr)
 }
 
 func (m *serviceManager) startServiceDoctor(loop bool) {
@@ -62,7 +114,9 @@ func (m *serviceManager) startServiceDoctor(loop bool) {
 		if loop {
 			time.Sleep(m.healthCheckInterval)
 		}
-		for addr, client := range m.addrToClientMap {
+		addrs, clients := m.getAddrsWithClients()
+		for i, addr := range addrs {
+			client := clients[i]
 			_, err := serviceHealthCheck(ctx, client)
 			if err != nil {
 				m.abandonService(addr)
@@ -285,7 +339,9 @@ func updateProcessorRegistries(client tcpclient.Client, data []byte) (err error)
 func (m *serviceManager) broadcastProcessorRegistries(ctx context.Context) (err error) {
 	logger.Debugf(ctx, "broadcast processor registries")
 	req := &pb.UpdateRegistriesRequest{}
-	for command, addrs := range m.commandToAddrsMap {
+	commands, addrsList := m.getCommandsWithAddrsList()
+	for i, command := range commands {
+		addrs := addrsList[i]
 		for _, addr := range addrs {
 			req.CommandAddressPairs = append(req.CommandAddressPairs, &pb.CommandAddressPair{
 				Command: command,
@@ -293,17 +349,20 @@ func (m *serviceManager) broadcastProcessorRegistries(ctx context.Context) (err 
 			})
 		}
 	}
-	for addr, connConfig := range m.addrToConnConfigMap {
+	addrs, cfgs := m.getAddrsWithConnConfigs()
+	for i, addr := range addrs {
+		cfg := cfgs[i]
 		req.AddrConfigs = append(req.AddrConfigs, &pb.AddressConfig{
 			Address:    addr,
-			ConnConfig: connConfig,
+			ConnConfig: cfg,
 		})
 	}
 	data, err := wrapAndMarshalRequest(ctx, config.CMDServiceUpdateRegistries, req)
 	if err != nil {
 		return err
 	}
-	for _, client := range m.addrToClientMap {
+	_, clients := m.getAddrsWithClients()
+	for _, client := range clients {
 		err = updateProcessorRegistries(client, data)
 		if err != nil {
 			logger.Errorf(ctx, err.Error())

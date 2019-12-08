@@ -1,0 +1,20 @@
+syntax = "proto3";
+package example;
+
+message GactusFile {
+    string name    = 1;
+    bytes  content = 2;
+}
+
+message CalculateRequest {
+    int32      a                = 1;
+    int32      b                = 2;
+    GactusFile file             = 3;
+    repeated   GactusFile files = 5;
+    repeated   string names     = 4;
+}
+
+message CalculateResponse {
+    string debug_message = 1;
+    int32  c             = 2;
+}

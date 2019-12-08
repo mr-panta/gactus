@@ -27,3 +27,5 @@ run/core:
 	go run -mod vendor ./cmd/core/*.go
 run/example:
 	go run -mod vendor ./cmd/example/*.go
+run/example_2:
+	go run -mod vendor ./cmd/example_2/*.go
