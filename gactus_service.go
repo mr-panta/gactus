@@ -22,6 +22,7 @@ import (
 type gactusService struct {
 	name            string
 	coreAddr        string
+	accessToken     string
 	tcpPort         int
 	handler         service.Handler
 	minConns        int
@@ -83,9 +84,12 @@ func NewService() (Service, error) {
 		clearPeriod = DefaultServiceClearPeriod
 	}
 
+	accessToken := os.Getenv(ServiceAccessToken)
+
 	return NewServiceWithConfig(
 		name,
 		coreAddr,
+		accessToken,
 		tcpPort,
 		minConns,
 		maxConns,
@@ -95,12 +99,13 @@ func NewService() (Service, error) {
 	)
 }
 
-func NewServiceWithConfig(name, coreAddr string, tcpPort, minConns, maxConns, idleConnTimeout, waitConnTimeout,
+func NewServiceWithConfig(name, coreAddr, accessToken string, tcpPort, minConns, maxConns, idleConnTimeout, waitConnTimeout,
 	clearPeriod int) (Service, error) {
 
 	ctx := context.Background()
 	logger.Infof(ctx, "GACTUS_SERVICE_NAME=%s", name)
 	logger.Infof(ctx, "GACTUS_SERVICE_CORE_ADDR=%s", coreAddr)
+	logger.Infof(ctx, "GACTUS_SERVICE_ACCESS_TOKEN=%s", accessToken)
 	logger.Infof(ctx, "GACTUS_SERVICE_TCP_PORT=%d", tcpPort)
 	logger.Infof(ctx, "GACTUS_SERVICE_MIN_CONNS=%d", minConns)
 	logger.Infof(ctx, "GACTUS_SERVICE_MAX_CONNS=%d", maxConns)
@@ -115,6 +120,7 @@ func NewServiceWithConfig(name, coreAddr string, tcpPort, minConns, maxConns, id
 	return &gactusService{
 		name:            name,
 		coreAddr:        coreAddr,
+		accessToken:     accessToken,
 		tcpPort:         tcpPort,
 		handler:         handler,
 		minConns:        minConns,
@@ -163,6 +169,7 @@ func (c *gactusService) RegisterService(processors []*Processor) error {
 		addrs[i] = fmt.Sprintf("%s:%d", addrs[i], c.tcpPort)
 	}
 	req := &pb.RegisterServiceRequest{
+		AccessToken:         c.accessToken,
 		Addresses:           addrs,
 		ProcessorRegistries: make([]*pb.ProcessorRegistry, len(processors)),
 		ConnConfig: &pb.ConnectionConfig{

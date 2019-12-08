@@ -43,20 +43,23 @@ func NewCore() Core {
 		healthCheckInterval = DefaultHealthCheckInterval
 	}
 
-	return NewCoreWithConfig(httpPort, tcpPort, healthCheckInterval)
+	// Get access token
+	accessToken := os.Getenv(CoreAccessToken)
+
+	return NewCoreWithConfig(httpPort, tcpPort, accessToken, healthCheckInterval)
 }
 
-func NewCoreWithConfig(httpPort, tcpPort, healthCheckInterval int) Core {
-
+func NewCoreWithConfig(httpPort, tcpPort int, accessToken string, healthCheckInterval int) Core {
 	ctx := context.Background()
 	logger.Infof(ctx, "GACTUS_CORE_HTTP_PORT=%d", httpPort)
 	logger.Infof(ctx, "GACTUS_CORE_TCP_PORT=%d", tcpPort)
 	logger.Infof(ctx, "GACTUS_CORE_HEALTH_CHECK_INTERVAL=%d", healthCheckInterval)
+	logger.Infof(ctx, "GACTUS_CORE_ACCESS_TOKEN=%s", accessToken)
 
 	return &gactusCore{
 		httpPort: httpPort,
 		tcpPort:  tcpPort,
-		handler:  core.NewHandler(healthCheckInterval),
+		handler:  core.NewHandler(accessToken, healthCheckInterval),
 	}
 }
 

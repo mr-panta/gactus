@@ -12,6 +12,8 @@ message Constant {
         RESPONSE_ERROR_SETUP_RESPONSE  = 103;
         RESPONSE_ERROR_UNPACK_RESPONSE = 104;
         RESPONSE_CREATE_CLIENT_FAILED  = 105;
+        RESPONSE_ACCESS_DENY           = 106;
+        RESPONSE_ERROR_IP_ADDRESS      = 107;
     }
 
     enum ContentType {
@@ -75,9 +77,10 @@ message AddressConfig {
 }
 
 message RegisterServiceRequest {
-    repeated         string            addresses            = 1;
-    repeated         ProcessorRegistry processor_registries = 2;
-    ConnectionConfig conn_config                            = 3;
+    string           access_token                           = 1;
+    repeated         string            addresses            = 2;
+    repeated         ProcessorRegistry processor_registries = 3;
+    ConnectionConfig conn_config                            = 4;
 }
 
 message RegisterServiceResponse {

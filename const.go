@@ -5,6 +5,7 @@ const (
 	CoreHTTPPortVar                   = "GACTUS_CORE_HTTP_PORT"
 	CoreTCPPortVar                    = "GACTUS_CORE_TCP_PORT"
 	CoreDefaultHealthCheckIntervalVar = "GACTUS_CORE_HEALTH_CHECK_INTERVAL"
+	CoreAccessToken                   = "GACTUS_CORE_ACCESS_TOKEN"
 )
 
 // Environment service variables
@@ -17,6 +18,7 @@ const (
 	ServiceIdleConnTimeoutVar = "GACTUS_SERVICE_IDLE_CONN_TIMEOUT"
 	ServiceWaitConnTimeoutVar = "GACTUS_SERVICE_WAIT_CONN_TIMEOUT"
 	ServiceClearPeriodVar     = "GACTUS_SERVICE_CLEAR_PERIOD"
+	ServiceAccessToken        = "GACTUS_SERVICE_ACCESS_TOKEN"
 )
 
 // Default core variables

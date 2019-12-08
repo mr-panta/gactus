@@ -162,16 +162,14 @@ func (h handler) ServeTCP(conn net.Conn) {
 				wrappedRes, err = h.serviceManager.registerService(reqCtx, wrappedReq)
 				if err != nil {
 					logger.Errorf(ctx, "cannot register service: error[%v]", err)
-				}
-				bcErr := h.serviceManager.broadcastProcessorRegistries(reqCtx)
-				if bcErr != nil {
-					logger.Errorf(ctx, "cannot broadcast processor registries: error[%v]", bcErr)
+				} else {
+					err = h.serviceManager.broadcastProcessorRegistries(reqCtx)
+					if err != nil {
+						logger.Errorf(ctx, "cannot broadcast processor registries: error[%v]", err)
+					}
 				}
 			default:
 				wrappedRes.Code = uint32(pb.Constant_RESPONSE_COMMAND_NOT_FOUND)
-			}
-			if err != nil {
-				return nil, err
 			}
 
 			return proto.Marshal(wrappedRes)

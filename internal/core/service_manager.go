@@ -24,16 +24,18 @@ type serviceManager struct {
 	addrToClientMap     map[string]tcpclient.Client
 	addrToConnConfigMap map[string]*pb.ConnectionConfig
 	healthCheckInterval time.Duration
+	accessToken         string
 	lock                sync.RWMutex
 }
 
-func newServiceManager(healthCheckInterval int) *serviceManager {
+func newServiceManager(accessToken string, healthCheckInterval int) *serviceManager {
 	m := &serviceManager{
 		routeToCommandMap:   make(map[string]string),
 		commandToAddrsMap:   make(map[string][]string),
 		addrToClientMap:     make(map[string]tcpclient.Client),
 		addrToConnConfigMap: make(map[string]*pb.ConnectionConfig),
 		healthCheckInterval: time.Duration(healthCheckInterval) * time.Second,
+		accessToken:         accessToken,
 	}
 	go m.startServiceDoctor(true)
 	return m
@@ -180,14 +182,34 @@ func (m *serviceManager) registerService(ctx context.Context, wrappedReq *pb.Req
 	defer m.lock.Unlock()
 	req := &pb.RegisterServiceRequest{}
 	res := &pb.RegisterServiceResponse{}
+	wrappedRes = &pb.Response{}
 	err = proto.Unmarshal(wrappedReq.Body, req)
 	if err != nil {
-		return nil, err
+		wrappedRes.Code = uint32(pb.Constant_RESPONSE_ERROR_UNPACK_REQUEST)
+		res.DebugMessage = err.Error()
+	} else {
+		res.Address, wrappedRes.Code, err = m.registerServiceInner(ctx, req)
+		if err != nil {
+			res.DebugMessage = err.Error()
+		}
+	}
+	var pbErr error
+	wrappedRes.Body, pbErr = proto.Marshal(res)
+	if pbErr != nil {
+		wrappedRes.Code = uint32(pb.Constant_RESPONSE_ERROR_SETUP_RESPONSE)
+	}
+	return wrappedRes, err
+}
+
+func (m *serviceManager) registerServiceInner(ctx context.Context, req *pb.RegisterServiceRequest) (serviceAddr string, code uint32, err error) {
+	// Check access token
+	if req.AccessToken != m.accessToken {
+		return "", uint32(pb.Constant_RESPONSE_ACCESS_DENY), errors.New("access_token incorrect")
 	}
 	// Check usable IP Address
-	serviceAddr, err := verifyServiceAddresses(ctx, req.Addresses)
+	serviceAddr, err = verifyServiceAddresses(ctx, req.Addresses)
 	if err != nil {
-		return nil, err
+		return "", uint32(pb.Constant_RESPONSE_ERROR_IP_ADDRESS), err
 	}
 	// Setup connection to service
 	m.addrToConnConfigMap[serviceAddr] = req.ConnConfig
@@ -204,7 +226,7 @@ func (m *serviceManager) registerService(ctx context.Context, wrappedReq *pb.Req
 		time.Duration(req.ConnConfig.ClearPeriod)*time.Millisecond,
 	)
 	if err != nil {
-		return nil, err
+		return "", uint32(pb.Constant_RESPONSE_CREATE_CLIENT_FAILED), err
 	}
 	m.addrToClientMap[serviceAddr] = client
 	// Update processors registries
@@ -227,14 +249,7 @@ func (m *serviceManager) registerService(ctx context.Context, wrappedReq *pb.Req
 			m.commandToAddrsMap[registry.Command] = append(m.commandToAddrsMap[registry.Command], serviceAddr)
 		}
 	}
-	res.Address = serviceAddr
-	wrappedRes = &pb.Response{}
-	wrappedRes.Body, err = proto.Marshal(res)
-	wrappedRes.Code = uint32(pb.Constant_RESPONSE_OK)
-	if err != nil {
-		return nil, err
-	}
-	return wrappedRes, nil
+	return serviceAddr, uint32(pb.Constant_RESPONSE_OK), err
 }
 
 func getRoute(method, path string) string {
