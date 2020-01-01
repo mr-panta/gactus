@@ -1,0 +1,91 @@
+syntax = "proto3";
+package gactus;
+
+message Constant {
+    
+    enum ContentType {
+        CONTENT_TYPE_UNKNOWN               = 0;
+        CONTENT_TYPE_JSON                  = 1;
+        CONTENT_TYPE_FORM_DATA             = 2;
+        CONTENT_TYPE_X_WWW_FORM_URLENCODED = 3;
+    }
+
+    enum HttpMethod {
+        HTTP_METHOD_UNKNOWN = 0;
+        HTTP_METHOD_GET     = 1;
+        HTTP_METHOD_POST    = 2;
+    }
+}
+
+message Request {
+    string               http_address     = 1;
+    string               log_id           = 2;
+    string               command          = 3;
+    bool                 is_proto         = 4;
+    map<string, string>  header           = 5;
+    map<string, string>  query            = 6;
+    bytes                body             = 7;
+    Constant.ContentType content_type     = 8;
+    string               raw_content_type = 9;
+}
+
+message Response {
+    bytes body = 1;
+}
+
+message HttpConfig {
+    Constant.HttpMethod method = 1;
+    string              path   = 2;
+}
+
+message ConnectionConfig {
+    uint32 min_conns         = 1;
+    uint32 max_conns         = 2;
+    uint32 idle_conn_timeout = 3;
+    uint32 wait_conn_timeout = 4;
+    uint32 clear_period      = 5;
+}
+
+message ProcessorRegistry {
+    string     command     = 1;
+    HttpConfig http_config = 2;
+}
+
+message CommandAddressPair {
+    string command = 1;
+    string address = 2;
+}
+
+message AddressConfig {
+    string           address     = 1;
+    ConnectionConfig conn_config = 2;
+}
+
+message RegisterServiceRequest {
+    string           access_token                           = 1;
+    repeated         string            addresses            = 2;
+    repeated         ProcessorRegistry processor_registries = 3;
+    ConnectionConfig conn_config                            = 4;
+}
+
+message RegisterServiceResponse {
+    string address       = 1;
+    string debug_message = 2;
+}
+
+message UpdateRegistriesRequest {
+    repeated CommandAddressPair command_address_pairs = 1;
+    repeated AddressConfig      addr_configs          = 2;
+}
+
+message UpdateRegistriesResponse {
+    string debug_message = 1;
+}
+
+message HealthCheckRequest {
+    string address = 1;
+}
+
+message HealthCheckResponse {
+    string debug_message = 1;
+}
