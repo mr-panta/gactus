@@ -26,13 +26,24 @@ type GactusService interface {
 }
 
 type gactusService struct {
+	name        string
 	tcpPort     int
 	coreAddress string
 	service     *service.Service
 }
 
-func NewGactusService(coreAddress string, tcpPort int) GactusService {
+type Processor struct {
+	Command        string
+	Req            proto.Message
+	Res            proto.Message
+	HTTPConfig     *pb.HttpConfig
+	HTTPMiddleware func(ctx context.Context, header, query map[string]string, req, res proto.Message) error
+	Process        func(ctx context.Context, req, res proto.Message) error
+}
+
+func NewGactusService(name string, coreAddress string, tcpPort int) GactusService {
 	gs := &gactusService{
+		name:        name,
 		coreAddress: coreAddress,
 		tcpPort:     tcpPort,
 		service:     service.NewService(),
@@ -77,6 +88,12 @@ func (gs *gactusService) RegisterProcessors(processors []*Processor) error {
 	for i := range addrs {
 		addrs[i] = fmt.Sprintf("%s:%d", addrs[i], gs.tcpPort)
 	}
+	processors = append(processors, &Processor{
+		Command: config.CMDServiceUpdateRegistries,
+		Req:     &pb.UpdateRegistriesRequest{},
+		Res:     &pb.UpdateRegistriesResponse{},
+		Process: gs.ProcessUpdateRegistries,
+	})
 	req := &pb.RegisterServiceRequest{
 		Addresses:           addrs,
 		ProcessorRegistries: make([]*pb.ProcessorRegistry, len(processors)),
@@ -104,13 +121,4 @@ func (gs *gactusService) RegisterProcessors(processors []*Processor) error {
 
 func (gs *gactusService) SendRequest(ctx context.Context, command string, req proto.Message, res proto.Message) error {
 	return gs.service.SendRequest(ctx, command, req, res)
-}
-
-type Processor struct {
-	Command        string
-	Req            proto.Message
-	Res            proto.Message
-	HTTPConfig     *pb.HttpConfig
-	HTTPMiddleware func(ctx context.Context, header, query map[string]string, req, res proto.Message) error
-	Process        func(ctx context.Context, req, res proto.Message) error
 }

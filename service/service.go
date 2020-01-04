@@ -111,7 +111,7 @@ func (s *Service) Receive(wrappedReq *pb.Request, wrappedRes *pb.Response) error
 	return nil
 }
 
-func (s *Service) SendRequest(ctx context.Context, command string, req proto.Message, res proto.Message) error {
+func (s *Service) SendRequestWithAddress(ctx context.Context, address string, command string, req proto.Message, res proto.Message) error {
 	body, err := proto.Marshal(req)
 	if err != nil {
 		return err
@@ -123,8 +123,7 @@ func (s *Service) SendRequest(ctx context.Context, command string, req proto.Mes
 		Body:    body,
 	}
 	wrappedRes := &pb.Response{}
-
-	err = s.SendWrappedRequest(wrappedReq, wrappedRes)
+	err = s.SendWrappedRequest(address, wrappedReq, wrappedRes)
 	if err != nil {
 		return err
 	}
@@ -135,16 +134,29 @@ func (s *Service) SendRequest(ctx context.Context, command string, req proto.Mes
 	return nil
 }
 
-func (s *Service) SendWrappedRequest(wrappedReq *pb.Request, wrappedRes *pb.Response) error {
+func (s *Service) SendRequest(ctx context.Context, command string, req proto.Message, res proto.Message) error {
+	return s.SendRequestWithAddress(ctx, "", command, req, res)
+}
+
+func (s *Service) SendWrappedRequest(address string, wrappedReq *pb.Request, wrappedRes *pb.Response) (err error) {
 	if wrappedReq == nil {
 		return errors.New("wrapped request empty")
 	}
 	if wrappedRes == nil {
 		return errors.New("wrapped response empty")
 	}
-	client, err := s.getClientByCommand(wrappedReq.Command)
-	if err != nil {
-		return err
+	var client rpcpool.RPCPool
+	if address == "" {
+		client, err = s.getClientByCommand(wrappedReq.Command)
+		if err != nil {
+			return err
+		}
+	} else {
+		exists := true
+		client, exists = s.addressClientMap[address]
+		if !exists {
+			return fmt.Errorf("cannot find rpc client, address=%s", address)
+		}
 	}
 	err = client.Call(config.ReceiverMethodName, wrappedReq, wrappedRes)
 	if err != nil {
@@ -186,4 +198,23 @@ func (s *Service) SetAddressCommands(address string, commands []string) error {
 		s.commandAddressesMap[command] = addrs
 	}
 	return nil
+}
+
+func (s *Service) GetAddressCommandSet() []*pb.AddressCommandSet {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	addrCmds := []*pb.AddressCommandSet{}
+	addrCmdsMap := make(map[string][]string)
+	for cmd, addrs := range s.commandAddressesMap {
+		for _, addr := range addrs {
+			addrCmdsMap[addr] = append(addrCmdsMap[addr], cmd)
+		}
+	}
+	for addr, cmds := range addrCmdsMap {
+		addrCmds = append(addrCmds, &pb.AddressCommandSet{
+			Address:   addr,
+			Commmands: cmds,
+		})
+	}
+	return addrCmds
 }

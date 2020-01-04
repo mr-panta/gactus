@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/mr-panta/gactus/config"
+
 	"github.com/golang/protobuf/proto"
 	pb "github.com/mr-panta/gactus/proto"
 	"github.com/mr-panta/go-logger"
@@ -21,6 +23,21 @@ func verifyServiceAddresses(ctx context.Context, addrs []string) (addr string, e
 		logger.Errorf(ctx, err.Error())
 	}
 	return "", errors.New("cannot verify service addresses")
+}
+
+func (gc *gactusCore) UpdateAllServices(ctx context.Context) error {
+	addrCmds := gc.service.GetAddressCommandSet()
+	req := &pb.UpdateRegistriesRequest{
+		AddressCommands: addrCmds,
+	}
+	res := &pb.UpdateRegistriesResponse{}
+	for _, addrCmd := range addrCmds {
+		err := gc.service.SendRequestWithAddress(ctx, addrCmd.Address, config.CMDServiceUpdateRegistries, req, res)
+		if err != nil {
+			logger.Warnf(ctx, "cannot update send updated registries, err=%v", err)
+		}
+	}
+	return nil
 }
 
 func (gc *gactusCore) ProcessRegisterService(ctx context.Context, request proto.Message, response proto.Message) (err error) {
@@ -46,6 +63,10 @@ func (gc *gactusCore) ProcessRegisterService(ctx context.Context, request proto.
 		commands = append(commands, processor.Command)
 	}
 	err = gc.service.SetAddressCommands(addr, commands)
+	if err != nil {
+		return err
+	}
+	err = gc.UpdateAllServices(ctx)
 	if err != nil {
 		return err
 	}

@@ -55,14 +55,9 @@ message ProcessorRegistry {
     HttpConfig http_config = 2;
 }
 
-message CommandAddressPair {
-    string command = 1;
-    string address = 2;
-}
-
-message AddressConfig {
-    string           address     = 1;
-    ConnectionConfig conn_config = 2;
+message AddressCommandSet {
+    string   address          = 1;
+    repeated string commmands = 2;
 }
 
 message RegisterServiceRequest {
@@ -77,8 +72,7 @@ message RegisterServiceResponse {
 }
 
 message UpdateRegistriesRequest {
-    repeated CommandAddressPair command_address_pairs = 1;
-    repeated AddressConfig      addr_configs          = 2;
+    repeated AddressCommandSet address_commands = 1;
 }
 
 message UpdateRegistriesResponse {
