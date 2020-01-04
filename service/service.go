@@ -123,15 +123,30 @@ func (s *Service) SendRequest(ctx context.Context, command string, req proto.Mes
 		Body:    body,
 	}
 	wrappedRes := &pb.Response{}
-	client, err := s.getClientByCommand(command)
-	if err != nil {
-		return err
-	}
-	err = client.Call(config.ReceiverMethodName, wrappedReq, wrappedRes)
+
+	err = s.SendWrappedRequest(wrappedReq, wrappedRes)
 	if err != nil {
 		return err
 	}
 	err = proto.Unmarshal(wrappedRes.Body, res)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) SendWrappedRequest(wrappedReq *pb.Request, wrappedRes *pb.Response) error {
+	if wrappedReq == nil {
+		return errors.New("wrapped request empty")
+	}
+	if wrappedRes == nil {
+		return errors.New("wrapped response empty")
+	}
+	client, err := s.getClientByCommand(wrappedReq.Command)
+	if err != nil {
+		return err
+	}
+	err = client.Call(config.ReceiverMethodName, wrappedReq, wrappedRes)
 	if err != nil {
 		return err
 	}

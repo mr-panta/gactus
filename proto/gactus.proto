@@ -22,8 +22,8 @@ message Request {
     string               log_id           = 2;
     string               command          = 3;
     bool                 is_proto         = 4;
-    map<string, string>  header           = 5;
-    map<string, string>  query            = 6;
+    map<string          , string>  header = 5;
+    map<string          , string>  query  = 6;
     bytes                body             = 7;
     Constant.ContentType content_type     = 8;
     string               raw_content_type = 9;
@@ -31,6 +31,10 @@ message Request {
 
 message Response {
     bytes body = 1;
+}
+
+message ErrorResponse {
+    string debug_message = 1;
 }
 
 message HttpConfig {
@@ -69,8 +73,7 @@ message RegisterServiceRequest {
 }
 
 message RegisterServiceResponse {
-    string address       = 1;
-    string debug_message = 2;
+    string address = 1;
 }
 
 message UpdateRegistriesRequest {
