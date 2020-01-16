@@ -74,7 +74,7 @@ func main() {
     service.Start()
     logger.Infof(
         context.Background(),
-        "gactus service started with name=%s on tcp port=%s and connect to gactus core address=%s with access key=%s",
+        "gactus service started with name=%s on tcp port=%d and connect to gactus core address=%s with access key=%s",
         serviceName,
         tcpPort,
         coreAddress,
@@ -91,8 +91,125 @@ The code above is the code to show you an example of how to install Gactus Servi
 
 ### Create Gactus API
 
+Before creating your API, you need to define the protocol you will use with the API. In Gactus, you need to create request and response with [Protocol Buffers](https://developers.google.com/protocol-buffers). We also recomment you to use [proto3](https://developers.google.com/protocol-buffers/docs/proto3) with Gactus.
+
+```proto3
+syntax = "proto3";
+package first_example;
+
+message AddRequest {
+    uint32 a = 1;
+    uint32 b = 2;
+}
+
+message AddResponse {
+    uint32 c = 1;
+}
+```
+
+Gactus library provides `gactus.Processor` which is a struct used to describe your API. Below is the example code of how to create your own processor.
+
+```go
+service := gactus.NewGactusService(
+    "first_example",
+    tcpPort,
+    coreAddress,
+    accessKey,
+)
+service.Start()
+processors := []*gactus.Processor{
+    {
+        Command: "first_example.add",
+        Req:     &first_example.AddRequest{},
+        Res:     &first_example.AddResponse{},
+        Process: func(ctx context.Context, request, response proto.Message) error {
+            req, ok := request.(*first_example.AddRequest)
+            if !ok {
+                return errors.New("cannot assert request object")
+            }
+            res, ok := response.(*first_example.AddResponse)
+            if !ok {
+                return errors.New("cannot assert response object")
+            }
+            res.C = req.A + req.B
+            return nil
+        },
+    },
+}
+err := service.RegisterProcessors(processors)
+if err != nil {
+    logger.Fatalf(context.Background(), err.Error())
+}
+service.Wait()
+```
+
+From the example, you will get the service with an API for doing some basic calculation.
+
 ### Call Gactus API
+
+After you can have your API, sometimes the API need to be called by other API. There is a method in Gactus Service object called `SendRequest` that you can use to call other services APIs.
+
+```proto3
+syntax = "proto3";
+package second_example;
+
+message SubtractRequest {
+    uint32 a = 1;
+    uint32 b = 2;
+}
+
+message SubtractResponse {
+    uint32 c = 1;
+}
+```
+
+```go
+service := gactus.NewGactusService(
+    "second_example",
+    tcpPort,
+    coreAddress,
+    accessKey,
+)
+service.Start()
+processors := []*gactus.Processor{
+    {
+        Command: "second_example.subtract",
+        Req:     &second_example.SubtractRequest{},
+        Res:     &second_example.SubtractResponse{},
+        Process: func(ctx context.Context, request, response proto.Message) error {
+            req, ok := request.(*second_example.SubtractRequest)
+            if !ok {
+                return errors.New("cannot assert request object")
+            }
+            res, ok := response.(*second_example.SubtractResponse)
+            if !ok {
+                return errors.New("cannot assert response object")
+            }
+            addReq := &first_example.AddRequest{
+                A: req.A,
+                B: -req.B,
+            }
+            addRes := &first_example.AddResponse{}
+            err := service.SendRequest(ctx, "first_example.add", addReq, addRes)
+            if err != nil {
+                return fmt.Errorf("fail to call first_example.add, err=%v", err)
+            }
+            res.C = addRes.C
+            return nil
+        },
+    },
+}
+err := service.RegisterProcessors(processors)
+if err != nil {
+    logger.Fatalf(context.Background(), err.Error())
+}
+service.Wait()
+```
 
 ### Expose Gactus API to HTTP
 
+// TODO
+
 ### Upload file with Gactus API
+
+// TODO
