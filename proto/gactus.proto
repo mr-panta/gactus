@@ -61,7 +61,7 @@ message AddressCommandSet {
 }
 
 message RegisterServiceRequest {
-    string           access_token                           = 1;
+    string           access_key                             = 1;
     repeated         string            addresses            = 2;
     repeated         ProcessorRegistry processor_registries = 3;
     ConnectionConfig conn_config                            = 4;

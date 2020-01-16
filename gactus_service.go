@@ -27,7 +27,7 @@ type GactusService interface {
 
 type gactusService struct {
 	name        string
-	accessToken string
+	accessKey   string
 	tcpPort     int
 	coreAddress string
 	service     *service.Service
@@ -42,10 +42,10 @@ type Processor struct {
 	Process        func(ctx context.Context, req, res proto.Message) error
 }
 
-func NewGactusService(name, accessToken, coreAddress string, tcpPort int) GactusService {
+func NewGactusService(name string, tcpPort int, coreAddress, accessKey string) GactusService {
 	gs := &gactusService{
 		name:        name,
-		accessToken: accessToken,
+		accessKey:   accessKey,
 		coreAddress: coreAddress,
 		tcpPort:     tcpPort,
 		service:     service.NewService(),
@@ -98,7 +98,7 @@ func (gs *gactusService) RegisterProcessors(processors []*Processor) error {
 	})
 	req := &pb.RegisterServiceRequest{
 		Addresses:           addrs,
-		AccessToken:         gs.accessToken,
+		AccessKey:           gs.accessKey,
 		ProcessorRegistries: make([]*pb.ProcessorRegistry, len(processors)),
 	}
 	for i, p := range processors {

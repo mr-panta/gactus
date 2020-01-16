@@ -152,7 +152,7 @@ func (s *Service) SendWrappedRequest(address string, wrappedReq *pb.Request, wra
 			return err
 		}
 	} else {
-		exists := true
+		var exists bool
 		client, exists = s.addressClientMap[address]
 		if !exists {
 			return fmt.Errorf("cannot find rpc client, address=%s", address)

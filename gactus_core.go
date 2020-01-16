@@ -27,16 +27,16 @@ type GactusCore interface {
 
 type gactusCore struct {
 	lock            sync.RWMutex
-	accessToken     string
+	accessKey       string
 	tcpPort         int
 	httpPort        int
 	service         *service.Service
 	routeCommandMap map[string]string
 }
 
-func NewGactusCore(accessToken string, httpPort, tcpPort int) GactusCore {
+func NewGactusCore(httpPort, tcpPort int, accessKey string) GactusCore {
 	gc := &gactusCore{
-		accessToken:     accessToken,
+		accessKey:       accessKey,
 		tcpPort:         tcpPort,
 		httpPort:        httpPort,
 		service:         service.NewService(),
