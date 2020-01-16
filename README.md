@@ -7,4 +7,4 @@ Gactus is a microservice framework library for Go. It provides ability to replic
 
 To apply Gactus to your application, there are two parts you need to install in your system. First, **Gactus Core**  is the part that provides HTTP communication for clients, contains service registries, and redirects HTTP request to other services. Second, **Gactus Service** is the part that contains all business logic, communicates with other Gactus Services and Gactus Core.
 
-![General system diagram with Gactus](./doc/gactus.png =471x421)
+![General system diagram with Gactus](https://raw.githubusercontent.com/mr-panta/gactus/feature/init/doc/gactus.png?raw=true =471x421)
