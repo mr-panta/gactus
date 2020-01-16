@@ -49,6 +49,9 @@ func (gc *gactusCore) ProcessRegisterService(ctx context.Context, request proto.
 	if !ok {
 		return errors.New("cannot assert response object")
 	}
+	if gc.accessToken != req.AccessToken {
+		return errors.New("access_token incorrect")
+	}
 	addr, err := verifyServiceAddresses(ctx, req.Addresses)
 	if err != nil {
 		return err

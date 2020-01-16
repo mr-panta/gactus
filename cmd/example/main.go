@@ -12,10 +12,10 @@ import (
 )
 
 func main() {
-	core := gactus.NewGactusCore(8000, 3000)
+	core := gactus.NewGactusCore("hi", 8000, 3000)
 	core.Start()
 
-	s := gactus.NewGactusService("s", "localhost:3000", 4000)
+	s := gactus.NewGactusService("s", "hi", "localhost:3000", 4000)
 	s.Start()
 	err := s.RegisterProcessors([]*gactus.Processor{
 		{
@@ -53,7 +53,7 @@ func main() {
 		logger.Fatalf(context.Background(), err.Error())
 	}
 
-	s2 := gactus.NewGactusService("s2", "localhost:3000", 5000)
+	s2 := gactus.NewGactusService("s2", "hi", "localhost:3000", 5000)
 	s2.Start()
 	err = s2.RegisterProcessors([]*gactus.Processor{
 		{
