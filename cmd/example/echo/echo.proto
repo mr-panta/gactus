@@ -8,16 +8,3 @@ message Request {
 message Response {
     string message = 1;
 }
-
-message GactusFile {
-    string name    = 1;
-    bytes  content = 2;
-}
-
-message ChangeProfileRequest {
-    GactusFile image = 1;
-}
-
-message ChangeProfileResponse {
-    uint32 file_size = 1;
-}
