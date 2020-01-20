@@ -13,7 +13,7 @@ Gactus is a microservice framework library for Go. It provides ability to replic
 
 ## Installation
 
-To apply Gactus to your application, there are two parts you need to install in your system. First, **Gactus Core** is the part that provides HTTP communication for clients, contains service registries, and redirects HTTP request to other services. Second, **Gactus Service** is the part that contains all business logic, communicates with other Gactus Services and Gactus Core.
+To apply Gactus to your system, there are two parts you need to install in your system. First, **Gactus Core** is the part that provides HTTP communication for clients, contains service registries, and redirects HTTP request to other services. Second, **Gactus Service** is the part that contains all business logic, communicates with other Gactus Services and Gactus Core.
 
 ![General system diagram with Gactus](https://raw.githubusercontent.com/mr-panta/gactus/feature/init/doc/gactus.png?raw=true)
 
@@ -32,7 +32,7 @@ import (
 func main() {
     httpPort := 80            // To receive HTTP request
     tcpPort := 3000           // To receive RPC request
-    accessKey := "secret1234" // For authentication
+    accessKey := "secret1234" // For authorization
     core := gactus.NewGactusCore(httpPort, tcpPort, accessKey)
     core.Start()
     logger.Infof(
@@ -91,7 +91,7 @@ The code above is the code to show you an example of how to install Gactus Servi
 
 ### Create Gactus API
 
-Before creating your API, you need to define the protocol you will use with the API. In Gactus, you need to create request and response with [Protocol Buffers](https://developers.google.com/protocol-buffers). We also recomment you to use [proto3](https://developers.google.com/protocol-buffers/docs/proto3) with Gactus.
+Before creating your API, you need to define the protocol you will use with the API. In Gactus, you need to create request and response format with [Protocol Buffers](https://developers.google.com/protocol-buffers). We also recommend you to use [proto3](https://developers.google.com/protocol-buffers/docs/proto3) with Gactus.
 
 ```proto3
 syntax = "proto3";
@@ -208,7 +208,96 @@ service.Wait()
 
 ### Expose Gactus API to HTTP
 
-// TODO
+Gactus allow you to create HTTP API by mapping your Gactus API with HTTP method and path. First, you need to follow the code below to import the packages you need.
+
+```go
+import (
+    "github.com/mr-panta/gactus"
+    pb "github.com/mr-panta/gactus/proto"
+)
+```
+
+Gactus supports two types of HTTP method: `GET` and `POST`, and the API will respond with `application/json` content type. The code below is the example of how to create API with `GET` method. You need to setup `HTTPConfig` and `HTTPMiddleware`. For `HTTPMiddleware`, you can get header of HTTP request and query parameters, and you can pass the data into request object.
+
+```go
+processors := []*gactus.Processor{
+    {
+        Command: "first_example.add",
+        Req:     &first_example.AddRequest{},
+        Res:     &first_example.AddResponse{},
+        HTTPConfig: &pb.HttpConfig{
+            Method: pb.Constant_HTTP_METHOD_GET,
+            Path:   "/first-example/add",
+        },
+        HTTPMiddleware: func(ctx context.Context, header, query map[string]string, req, res proto.Message) error {
+            req, ok := request.(*first_example.AddRequest)
+            if !ok {
+                return errors.New("cannot assert request object")
+            }
+            req.A, ok = query["a"]
+            if !ok {
+                return errors.New("parameter=a empty")
+            }
+            req.B, ok = query["b"]
+            if !ok {
+                return errors.New("parameter=b empty")
+            }
+            return nil
+        },
+        Process: func(ctx context.Context, request, response proto.Message) error {
+            req, ok := request.(*first_example.AddRequest)
+            if !ok {
+                return errors.New("cannot assert request object")
+            }
+            res, ok := response.(*first_example.AddResponse)
+            if !ok {
+                return errors.New("cannot assert response object")
+            }
+            res.C = req.A + req.B
+            return nil
+        },
+    },
+}
+
+/*
+URL: http://my.domain/first-example/add?a=2&b=3
+HTTP response body: {"c": 5}
+*/
+```
+
+For HTTP API with `POST` method, you don't need to setup `HTTPMiddleware` if you don't need the data from header of HTTP request and query paramenters, Gactus will convert body of HTTP request to request object. It supports three types of body content type: `application/json`, `multipart/form-data`, and `application/x-www-form-urlencoded`.
+
+```go
+processors := []*gactus.Processor{
+    {
+        Command: "first_example.add",
+        Req:     &first_example.AddRequest{},
+        Res:     &first_example.AddResponse{},
+        HTTPConfig: &pb.HttpConfig{
+            Method: pb.Constant_HTTP_METHOD_POST,
+            Path:   "/first-example/add",
+        },
+        Process: func(ctx context.Context, request, response proto.Message) error {
+            req, ok := request.(*first_example.AddRequest)
+            if !ok {
+                return errors.New("cannot assert request object")
+            }
+            res, ok := response.(*first_example.AddResponse)
+            if !ok {
+                return errors.New("cannot assert response object")
+            }
+            res.C = req.A + req.B
+            return nil
+        },
+    },
+}
+
+/*
+URL: http://my.domain/first-example/add?a=2&b=3
+HTTP request body: {"a": 4, "b": 6}
+HTTP response body: {"c": 10}
+*/
+```
 
 ### Upload file with Gactus API
 
