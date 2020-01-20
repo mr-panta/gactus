@@ -93,7 +93,7 @@ The code above is the code to show you an example of how to install Gactus Servi
 
 Before creating your API, you need to define the protocol you will use with the API. In Gactus, you need to create request and response format with [Protocol Buffers](https://developers.google.com/protocol-buffers). We also recommend you to use [proto3](https://developers.google.com/protocol-buffers/docs/proto3) with Gactus.
 
-```proto3
+```proto
 syntax = "proto3";
 package first_example;
 
@@ -149,7 +149,7 @@ From the example, you will get the service with an API for doing some basic calc
 
 After you can have your API, sometimes the API need to be called by other API. There is a method in Gactus Service object called `SendRequest` that you can use to call other services APIs.
 
-```proto3
+```proto
 syntax = "proto3";
 package second_example;
 
@@ -301,4 +301,56 @@ HTTP response body: {"c": 10}
 
 ### Upload file with Gactus API
 
-// TODO
+To fulfill the functionalities of providing HTTP API, Gactus provides an ability to upload file from HTTP API. You need declare `GactusFile` message in your protobuf file like the code below.
+
+```proto
+message GactusFile {
+    string name    = 1;
+    bytes  content = 2;
+}
+```
+
+After that, you can use the message inside a request object message in the same protobuf file.
+
+```proto
+message ChangeProfileRequest {
+    GactusFile picture = 1;
+}
+
+message ChangeProfileResponse {
+    uint32 file_size = 1;
+}
+```
+
+Then your API will be able to receive file data from client.
+
+```go
+processors := []*gactus.Processor{
+    {
+        Command: "first_example.change_profile",
+        Req:     &first_example.ChangeProfileRequest{},
+        Res:     &first_example.ChangeProfileResponse{},
+        HTTPConfig: &pb.HttpConfig{
+            Method: pb.Constant_HTTP_METHOD_POST,
+            Path:   "/first-example/change-profile",
+        },
+        Process: func(ctx context.Context, request, response proto.Message) error {
+            req, ok := request.(*first_example.ChangeProfileRequest)
+            if !ok {
+                return errors.New("cannot assert request object")
+            }
+            res, ok := response.(*first_example.ChangeProfileResponse)
+            if !ok {
+                return errors.New("cannot assert response object")
+            }
+            logger.Infof(ctx, "name=%s", req.Name)
+            res.FileSize = len(req.Content)
+            return nil
+        },
+    },
+}
+
+/*
+This API will return the size of uploaded file
+*/
+```
