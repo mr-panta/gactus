@@ -9,7 +9,7 @@ Gactus is a microservice framework library for Go. It provides ability to replic
   - [Create Gactus API](#create-gactus-api)
   - [Call Gactus API](#call-gactus-api)
   - [Expose Gactus API to HTTP](#expose-gactus-api-to-http)
-  - [Upload file with Gactus API](#upload-file-with-api)
+  - [Upload file with Gactus API](#upload-file-with-gactus-api)
 
 ## Installation
 
