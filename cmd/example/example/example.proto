@@ -1,0 +1,33 @@
+syntax = "proto3";
+package example;
+
+message AddRequest {
+    int32 a = 1;
+    int32 b = 2;
+}
+
+message AddResponse {
+    int32 c = 1;
+}
+
+message SubtractRequest {
+    int32 a = 1;
+    int32 b = 2;
+}
+
+message SubtractResponse {
+    int32 c = 1;
+}
+
+message GactusFile {
+    string name    = 1;
+    bytes  content = 2;
+}
+
+message ChangeProfileRequest {
+    GactusFile picture = 1;
+}
+
+message ChangeProfileResponse {
+    uint32 file_size = 1;
+}

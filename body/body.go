@@ -63,6 +63,13 @@ const (
 	contentTypeXWWWFormURLencoded = "application/x-www-form-urlencoded"
 )
 
+// CheckContentType is used to validate if the content type exists or not.
+func CheckContentType(contentType string) bool {
+	return contentType == contentTypeJSON ||
+		contentType == contentTypeFormData ||
+		contentType == contentTypeXWWWFormURLencoded
+}
+
 // GetContentTypeValue is used to convert content type from http request
 // to enum value.
 func GetContentTypeValue(header http.Header) (contentType pb.Constant_ContentType, rawContentType string, err error) {

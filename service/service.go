@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/mr-panta/gactus/body"
+	bd "github.com/mr-panta/gactus/body"
 	"github.com/mr-panta/gactus/config"
 	pb "github.com/mr-panta/gactus/proto"
 	logger "github.com/mr-panta/go-logger"
@@ -72,7 +73,7 @@ func (s *Service) GetProcessor(command string) (processor *Processor, exists boo
 	return p, exists
 }
 
-func (s *Service) Receive(wrappedReq *pb.Request, wrappedRes *pb.Response) error {
+func (s *Service) Receive(wrappedReq *pb.Request, wrappedRes *pb.Response) (err error) {
 	if wrappedReq == nil {
 		return fmt.Errorf("request nil")
 	}
@@ -86,7 +87,11 @@ func (s *Service) Receive(wrappedReq *pb.Request, wrappedRes *pb.Response) error
 	}
 	req := proto.Clone(processor.Req)
 	res := proto.Clone(processor.Res)
-	err := proto.Unmarshal(wrappedReq.Body, req)
+	if wrappedReq.IsProto {
+		err = proto.Unmarshal(wrappedReq.Body, req)
+	} else if wrappedReq.ContentType != pb.Constant_CONTENT_TYPE_UNKNOWN {
+		err = bd.Unmarshal(wrappedReq, req)
+	}
 	if err != nil {
 		return fmt.Errorf("cannot unpack request, err=%v", err)
 	}

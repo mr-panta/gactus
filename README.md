@@ -229,7 +229,7 @@ processors := []*gactus.Processor{
             Method: pb.Constant_HTTP_METHOD_GET,
             Path:   "/first-example/add",
         },
-        HTTPMiddleware: func(ctx context.Context, header, query map[string]string, req, res proto.Message) error {
+        HTTPMiddleware: func(ctx context.Context, header, query map[string]string, request, response proto.Message) error {
             req, ok := request.(*first_example.AddRequest)
             if !ok {
                 return errors.New("cannot assert request object")
