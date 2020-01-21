@@ -108,8 +108,10 @@ func runFirst() {
 				if !ok {
 					return errors.New("cannot assert response object")
 				}
-				logger.Infof(ctx, "name=%s", req.Picture.Name)
-				res.FileSize = uint32(len(req.Picture.Content))
+				for _, pic := range req.Pictures {
+					logger.Infof(ctx, "name=%s", pic.Name)
+					res.FileSize += uint32(len(pic.Content))
+				}
 				return nil
 			},
 		},

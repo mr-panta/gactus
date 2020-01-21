@@ -25,7 +25,7 @@ message GactusFile {
 }
 
 message ChangeProfileRequest {
-    GactusFile picture = 1;
+    repeated GactusFile pictures = 1;
 }
 
 message ChangeProfileResponse {

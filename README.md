@@ -98,12 +98,12 @@ syntax = "proto3";
 package first_example;
 
 message AddRequest {
-    uint32 a = 1;
-    uint32 b = 2;
+    int32 a = 1;
+    int32 b = 2;
 }
 
 message AddResponse {
-    uint32 c = 1;
+    int32 c = 1;
 }
 ```
 
@@ -154,12 +154,12 @@ syntax = "proto3";
 package second_example;
 
 message SubtractRequest {
-    uint32 a = 1;
-    uint32 b = 2;
+    int32 a = 1;
+    int32 b = 2;
 }
 
 message SubtractResponse {
-    uint32 c = 1;
+    int32 c = 1;
 }
 ```
 
@@ -234,14 +234,10 @@ processors := []*gactus.Processor{
             if !ok {
                 return errors.New("cannot assert request object")
             }
-            req.A, ok = query["a"]
-            if !ok {
-                return errors.New("parameter=a empty")
-            }
-            req.B, ok = query["b"]
-            if !ok {
-                return errors.New("parameter=b empty")
-            }
+            a, _ := strconv.ParseInt(query["a"], 10, 32)
+            b, _ := strconv.ParseInt(query["b"], 10, 32)
+            req.A = int32(a)
+            req.B = int32(b)
             return nil
         },
         Process: func(ctx context.Context, request, response proto.Message) error {
@@ -301,7 +297,7 @@ HTTP response body: {"c": 10}
 
 ### Upload file with Gactus API
 
-To fulfill the functionalities of providing HTTP API, Gactus provides an ability to upload file from HTTP API. You need declare `GactusFile` message in your protobuf file like the code below.
+To fulfill the functionalities of providing HTTP API, Gactus provides an ability to upload file from HTTP API. You need declare `GactusFile` message in your protobuf file like the code below. Anyway, the HTTP request content type must be `multipart/form-data`.
 
 ```proto
 message GactusFile {
