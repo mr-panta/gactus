@@ -191,7 +191,6 @@ func (gc *gactusCore) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	// Send data to TCP
 	err = gc.service.SendWrappedRequest("", wrappedReq, wrappedRes)
 	if err != nil {
-		err = fmt.Errorf("cannot send data to service, err=%v", err)
 		statusCode = http.StatusInternalServerError
 		return
 	}
