@@ -173,21 +173,22 @@ func (s *Service) SendWrappedRequest(address string, wrappedReq *pb.Request, wra
 func (s *Service) SetAddressCommands(address string, commands []string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	_, exists := s.addressClientMap[address]
-	if !exists {
-		client, err := rpcpool.NewRPCPool(
-			address,
-			config.MinConns,
-			config.MaxConns,
-			config.IdleConnTimeout,
-			config.WaitConnTimeout,
-			config.ClearPeriod,
-		)
-		if err != nil {
-			return err
-		}
-		s.addressClientMap[address] = client
+	client, exists := s.addressClientMap[address]
+	if exists {
+		client.Close()
 	}
+	client, err := rpcpool.NewRPCPool(
+		address,
+		config.MinConns,
+		config.MaxConns,
+		config.IdleConnTimeout,
+		config.WaitConnTimeout,
+		config.ClearPeriod,
+	)
+	if err != nil {
+		return err
+	}
+	s.addressClientMap[address] = client
 	for _, command := range commands {
 		addrs := s.commandAddressesMap[command]
 		exists = false
