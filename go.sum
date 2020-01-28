@@ -6,3 +6,5 @@ github.com/mr-panta/go-logger v0.3.3 h1:hPscRsCx5Pby96nsYy0TykKgj4dabc+RyAMSCrk/
 github.com/mr-panta/go-logger v0.3.3/go.mod h1:no6zubQjADjB0KyPPtEubDaNXkreMCrRHWL73PWDRr4=
 github.com/mr-panta/rpc-pool v0.0.1 h1:U0EskPlkWJKFGsElDkzZvQob1eiiNxLVkZKBxrzVlD4=
 github.com/mr-panta/rpc-pool v0.0.1/go.mod h1:TfdJIADGeD2IyvGgAgIPVOxgpYkYud5RSLvZlZsvXA8=
+github.com/mr-panta/rpc-pool v1.0.0 h1:eEsuKYikSrbCiYBCJV1XyksglXWbldcdnSRUVITb58Y=
+github.com/mr-panta/rpc-pool v1.0.0/go.mod h1:H6HbsVnyUZQN/W2zmqH+0Iu8DQJMX26P51NZgikiqxA=

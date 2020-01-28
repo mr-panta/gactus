@@ -60,6 +60,30 @@ func (s *Service) getClientByCommand(command string) (client rpcpool.RPCPool, er
 	return client, nil
 }
 
+func (s *Service) removeAddress(address string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if client, exists := s.addressClientMap[address]; exists {
+		if client != nil {
+			client.Close()
+		}
+		delete(s.addressClientMap, address)
+	}
+	commandAddressesMap := make(map[string][]string)
+	for cmd, addrs := range s.commandAddressesMap {
+		var addrList []string
+		for _, addr := range addrs {
+			if addr != address {
+				addrList = append(addrList, addr)
+			}
+		}
+		if len(addrList) > 0 {
+			commandAddressesMap[cmd] = addrList
+		}
+	}
+	s.commandAddressesMap = commandAddressesMap
+}
+
 func (s *Service) AddProcessor(command string, processor *Processor) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -164,6 +188,12 @@ func (s *Service) SendWrappedRequest(address string, wrappedReq *pb.Request, wra
 		}
 	}
 	err = client.Call(config.ReceiverMethodName, wrappedReq, wrappedRes)
+	if err == rpcpool.ErrShutdown {
+		if address == "" {
+			address = client.GetAddr()
+		}
+		s.removeAddress(address)
+	}
 	if err != nil {
 		return err
 	}
